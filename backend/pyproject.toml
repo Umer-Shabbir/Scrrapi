@@ -1,0 +1,67 @@
+[project]
+name = "leadgen-backend"
+version = "0.1.0"
+description = "Lead generation scraper backend (FastAPI + Celery + Playwright)"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "pydantic>=2.8",
+    "pydantic-settings>=2.4",
+    "sqlalchemy>=2.0",
+    "alembic>=1.13",
+    "psycopg[binary]>=3.2",
+    "celery>=5.4",
+    "redis>=5.0",
+    "playwright>=1.46",
+    "httpx>=0.27",
+    "beautifulsoup4>=4.12",
+    "email-validator>=2.2",
+    "openpyxl>=3.1",
+    "python-jose[cryptography]>=3.3",
+    "bcrypt>=4.1",
+    "python-multipart>=0.0.9",
+    "pyotp>=2.9",
+    "croniter>=2.0",
+    "dnspython>=2.6",
+    "google-api-python-client>=2.140",
+    "google-auth>=2.34",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "ruff>=0.6",
+    "mypy>=1.11",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+# Spelled out rather than left to setuptools' flat-layout autodiscovery. The
+# default EXPORT_DIR is ./exports, so the first CSV a local worker writes creates
+# `backend/exports/` -- autodiscovery then sees two top-level packages, refuses to
+# guess, and `pip install -e .` starts failing on a machine where it used to work.
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+# Pinned explicitly rather than left to ruff's defaults: the default rule set moves
+# between ruff releases, which turns "CI is green" into a function of whichever
+# version the runner resolved that day.
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = [
+    # `Depends(...)` in a parameter default is FastAPI's documented idiom, and the
+    # whole dependency-injection system is built on it.
+    "B008",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

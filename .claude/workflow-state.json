@@ -1,0 +1,8 @@
+{
+  "currentIndex": 8,
+  "currentScreen": "Results",
+  "status": "completed",
+  "completedScreens": ["Login", "Jobs (Dashboard)", "New Job Wizard", "Categories", "Locations", "Job Templates", "Schedules", "Schedule & Monitoring", "Results"],
+  "lastCompletedScreen": "Results",
+  "blockedReason": null
+}

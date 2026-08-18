@@ -1,0 +1,147 @@
+# Full stack, cold start: `docker compose up --build`.
+#
+# Ordering is enforced with healthchecks rather than plain `depends_on`, because
+# "container started" is not "Postgres accepting connections" -- on a cold volume
+# the first boot runs initdb and rejects connections for several seconds. The
+# one-shot `migrate` service then runs Alembic against both DBs, and the API and
+# worker only start once it exits 0.
+#
+# Service hostnames (app_db/geo_db/redis) are injected below and override whatever
+# localhost URLs are in backend/.env -- real environment variables take precedence
+# over dotenv values in pydantic-settings.
+
+x-backend-env: &backend-env
+  APP_DB_URL: postgresql+psycopg://leadgen:leadgen@app_db:5432/leadgen_app
+  GEO_DB_URL: postgresql+psycopg://leadgen:leadgen@geo_db:5432/leadgen_geo
+  REDIS_URL: redis://redis:6379/0
+  EXPORT_DIR: /app/exports
+  LOG_FORMAT: json
+
+x-backend-base: &backend-base
+  build: ./backend
+  env_file: ./backend/.env
+  environment: *backend-env
+  volumes:
+    - ./backend:/app
+    - exports_data:/app/exports
+
+services:
+  app_db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: leadgen
+      POSTGRES_PASSWORD: leadgen
+      POSTGRES_DB: leadgen_app
+    ports: ["5434:5432"]
+    volumes: ["app_db_data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U leadgen -d leadgen_app"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  geo_db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: leadgen
+      POSTGRES_PASSWORD: leadgen
+      POSTGRES_DB: leadgen_geo
+    ports: ["5433:5432"]
+    volumes: ["geo_db_data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U leadgen -d leadgen_geo"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  # Runs once per `up`, then exits. Alembic is a no-op when both DBs are already
+  # at head, so this is safe to re-run on every start.
+  #
+  # `app@head`/`geo@head`, not plain `head`: the two DBs share one versions/ dir
+  # with two root revisions, so an unqualified `head` is ambiguous and errors out.
+  migrate:
+    <<: *backend-base
+    command: >
+      sh -c "alembic -x target=app upgrade app@head &&
+             alembic -x target=geo upgrade geo@head"
+    depends_on:
+      app_db: {condition: service_healthy}
+      geo_db: {condition: service_healthy}
+    restart: "no"
+
+  backend:
+    <<: *backend-base
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    ports: ["8000:8000"]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      redis: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
+
+  # `-Q` must list every queue in app.core.celery_app.TASK_QUEUES, or tasks routed
+  # to a missing queue sit in Redis forever with the job stuck at "running".
+  #
+  # `--concurrency` is the real parallelism knob -- `concurrent_targets` (Settings
+  # page) only bounds how many *areas* the dispatcher puts on the broker at once;
+  # this is how many of those broker tasks a worker container actually runs at
+  # the same time. Fixed at MAX_CONCURRENT_TARGETS (app.core.config.Settings,
+  # 64) rather than an env var: Celery can't live-resize a running pool on
+  # every backend (the `threads` pool this project falls back to on Windows has
+  # no resize primitive at all -- see app/workers/dispatch.py), so the only way
+  # for the Settings page's slider to be the *one* live control, no restart, no
+  # env var, is to already have enough pool capacity for whatever it sends.
+  # Idle child processes cost nothing: a browser is only launched once a task
+  # is actually picked up (see app.workers.tasks), so running at the ceiling
+  # is free while `concurrent_targets` is keeping real load lower.
+  worker:
+    <<: *backend-base
+    command: >
+      celery -A app.core.celery_app.celery_app worker
+      -Q google_maps,bing_maps,places,exports
+      --concurrency=64 --loglevel=info
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      redis: {condition: service_healthy}
+    # Chromium needs more than Docker's default 64MB /dev/shm or tabs crash under
+    # load with "Target closed" partway through a scroll. Bigger here too --
+    # more concurrent Chromiums means more shared memory pressure overall.
+    shm_size: "4gb"
+    deploy:
+      resources:
+        limits:
+          # Each concurrent slot is a full Chromium process; without a memory
+          # ceiling a burst near the 64-slot ceiling can OOM the whole container.
+          # Raise this if MAX_CONCURRENT_TARGETS is ever raised past 64.
+          memory: 8G
+
+  # Serves the built SPA and proxies /api (REST + the progress WebSocket) to the
+  # backend, so the browser only ever talks to one origin. No API URL is baked into
+  # the bundle -- see frontend/nginx.conf.
+  #
+  # nginx resolves `backend` once at startup and refuses to boot if it's missing,
+  # hence waiting for it to be healthy rather than merely started.
+  frontend:
+    build:
+      context: ./frontend
+    ports: ["5173:80"]
+    depends_on:
+      backend: {condition: service_healthy}
+
+volumes:
+  app_db_data:
+  geo_db_data:
+  exports_data:

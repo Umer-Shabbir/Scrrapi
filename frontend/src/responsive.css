@@ -1,0 +1,97 @@
+/* Tablet (1024px) and mobile (768px) responsive utilities -- SCREENLIST.md
+   cross-cutting #4: the 768 breakpoint was attempted on only 5/23 screens and
+   broken wherever it was (no drawer nav, tables staying desktop-dense
+   multi-column instead of stacking). AppLayout.tsx/hooks/useMediaQuery.ts
+   already handle the app shell (sidebar/topbar) in JS since that needs real
+   conditional rendering (icon-only rail, hamburger drawer); everything below
+   is page-content layout, which is pure CSS reflow and doesn't need a JS
+   breakpoint check per page.
+
+   Global, imported once (main.tsx) alongside animations.css -- every screen
+   opts in by adding these class names to its layout containers instead of
+   each page hand-rolling its own @media query.
+
+   Breakpoints match theme/neobrutalist.ts's `breakpoint` tokens (1024/768).
+   Keep in sync if those ever change. */
+
+/* Multi-panel row (e.g. two side-by-side panels, a form + preview column)
+   stacks to a single column at tablet. Use on the flex row container that
+   currently hardcodes `display: flex, gap: N`. */
+@media (max-width: 1024px) {
+  .neo-responsive-row {
+    flex-direction: column !important;
+  }
+  .neo-responsive-row > * {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}
+
+/* Card/tile grids (repeat(N, 1fr)) drop to 2 columns at tablet, 1 at mobile.
+   Use on the grid container instead of a hardcoded gridTemplateColumns. */
+@media (max-width: 1024px) {
+  .neo-responsive-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+@media (max-width: 768px) {
+  .neo-responsive-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* A panel/card with a hardcoded pixel width (e.g. `width: 700`) goes full
+   width once the viewport can no longer fit it plus page padding. */
+@media (max-width: 1024px) {
+  .neo-responsive-fill {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}
+
+/* Stat-tile rows (Dashboard, Account quota meters) wrap 2-up at tablet,
+   1-up at mobile instead of squeezing 4 tiles into a narrow row. */
+@media (max-width: 1024px) {
+  .neo-responsive-stats {
+    flex-wrap: wrap !important;
+  }
+  .neo-responsive-stats > * {
+    flex: 1 1 45% !important;
+    min-width: 160px !important;
+  }
+}
+@media (max-width: 768px) {
+  .neo-responsive-stats > * {
+    flex: 1 1 100% !important;
+  }
+}
+
+/* Data table -> stacked cards at mobile. Pair with the .neo-table-card-row
+   markup pattern (see Dashboard/Schedules/WebhookDeliveryLog): the real
+   <table> element gets this class and is hidden at <=768px in favor of a
+   sibling card-list rendered for the same rows. */
+@media (max-width: 768px) {
+  .neo-responsive-table {
+    display: none !important;
+  }
+}
+.neo-responsive-cards {
+  display: none;
+}
+@media (max-width: 768px) {
+  .neo-responsive-cards {
+    display: flex !important;
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+
+/* Page-level header rows (title + action buttons) stack on mobile instead of
+   the buttons crowding off the right edge or wrapping mid-word. */
+@media (max-width: 768px) {
+  .neo-responsive-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+  }
+}

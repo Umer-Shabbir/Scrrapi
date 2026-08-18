@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+dist/
+.vite/
+
+# Env
+.env
+*.env.local
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Data / exports
+*.csv
+*.xlsx
+*.kml
+
+# Dev runner logs (scripts/dev.mjs, scripts/check.mjs)
+/logs/
+backend/*.log

@@ -1,0 +1,20 @@
+{
+  "name": "leadgen-scraper",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Lead Generation Scraper — one command brings up infra, API, Celery worker and the UI.",
+  "scripts": {
+    "dev": "node --max-old-space-size=4096 scripts/dev.mjs",
+    "setup": "node scripts/dev.mjs --setup-only",
+    "user": "node scripts/dev.mjs --create-user",
+    "seed": "node scripts/py.mjs scripts/seed_geo.py",
+    "smoke": "node scripts/py.mjs scripts/playwright_smoke.py",
+    "dev:docker": "docker compose up --build",
+    "stop": "docker compose stop",
+    "reset": "docker compose down -v",
+    "check": "node scripts/check.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
