@@ -40,19 +40,13 @@ def test_post_offices_fold_into_their_city(pk):
 def test_estimated_coordinates_do_not_veto_the_name(pk):
     # The bug this exists for: accuracy 1 puts "Lahore Model Town" 516km out, so
     # an unconditional distance check rejected exactly the rows to be fixed.
-    assert (
-        pk.resolve("PK", "04", "Lahore Model Town", "28.1598", "70.6959", ESTIMATED) == "Lahore"
-    )
-    assert (
-        pk.resolve("PK", "04", "Lahore Johar Town", "28.1598", "70.6959", ESTIMATED) == "Lahore"
-    )
+    assert pk.resolve("PK", "04", "Lahore Model Town", "28.1598", "70.6959", ESTIMATED) == "Lahore"
+    assert pk.resolve("PK", "04", "Lahore Johar Town", "28.1598", "70.6959", ESTIMATED) == "Lahore"
 
 
 def test_a_place_that_merely_contains_the_city_name_is_left_alone(pk):
     # Separate towns, not Lahore post offices — the match must be a *prefix*.
-    assert (
-        pk.resolve("PK", "04", "Nawan Lahore", "31.3245", "72.7282", REAL) == "Nawan Lahore"
-    )
+    assert pk.resolve("PK", "04", "Nawan Lahore", "31.3245", "72.7282", REAL) == "Nawan Lahore"
     assert pk.resolve("PK", "04", "Wagha Lahore", "31.6", "74.55", REAL) == "Wagha Lahore"
     assert (
         pk.resolve("PK", "04", "River View, Lahore", "28.16", "70.69", ESTIMATED)
@@ -112,10 +106,7 @@ def test_region_scoping_stops_cross_state_matches():
     r = CityResolver()
     r.add_place("US", "NY", "New York", 40.7143, -74.006)
 
-    assert (
-        r.resolve("US", "MN", "New York Mills", "46.5183", "-95.3761", REAL)
-        == "New York Mills"
-    )
+    assert r.resolve("US", "MN", "New York Mills", "46.5183", "-95.3761", REAL) == "New York Mills"
 
 
 def test_unknown_region_passes_through(pk):

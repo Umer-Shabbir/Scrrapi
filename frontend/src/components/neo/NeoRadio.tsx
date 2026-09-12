@@ -27,6 +27,7 @@ export default function NeoRadio({ checked, onChange, disabled }: NeoRadioProps)
         placeItems: "center",
         background: disabled ? color.sand : color.white,
         border: `3px solid ${disabled ? color.rule : color.ink}`,
+        borderRadius: 0,
         cursor: disabled ? "default" : "pointer",
         flexShrink: 0,
         transition: "border-color 120ms cubic-bezier(0.2, 0, 0, 1)",

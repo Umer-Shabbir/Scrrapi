@@ -78,6 +78,8 @@ SCORE_WEIGHT_KEYS = {
     "social": "score_weight_social",
     "rating_high": "score_weight_rating_high",
     "rating_good": "score_weight_rating_good",
+    "decision_maker": "score_weight_decision_maker",
+    "mobile_phone": "score_weight_mobile_phone",
 }
 SCORE_WEIGHT_DEFAULTS = {
     "email": 20,
@@ -88,6 +90,8 @@ SCORE_WEIGHT_DEFAULTS = {
     "social": 5,
     "rating_high": 15,
     "rating_good": 8,
+    "decision_maker": 10,
+    "mobile_phone": 10,
 }
 
 # Data retention (Settings > Data Retention). Export retention already existed
@@ -177,8 +181,10 @@ def clamp_cooldown_base_s(value: float) -> float:
 def get_cooldown_base_s(db: Session) -> float:
     """Base per-host cooldown seconds (app.scraping.common.rate_limit)."""
     return _read_float(
-        db, COOLDOWN_BASE_S_KEY,
-        default=settings.rate_limit_base_cooldown_s, clamp=clamp_cooldown_base_s,
+        db,
+        COOLDOWN_BASE_S_KEY,
+        default=settings.rate_limit_base_cooldown_s,
+        clamp=clamp_cooldown_base_s,
     )
 
 
@@ -196,8 +202,10 @@ def clamp_retry_ceiling(value: int) -> int:
 def get_retry_ceiling(db: Session) -> int:
     """Max retry attempts, applied uniformly to feed/place/export tasks."""
     return _read_int(
-        db, RETRY_CEILING_KEY,
-        default=settings.task_max_retries_feed, clamp=clamp_retry_ceiling,
+        db,
+        RETRY_CEILING_KEY,
+        default=settings.task_max_retries_feed,
+        clamp=clamp_retry_ceiling,
     )
 
 
@@ -260,8 +268,10 @@ def clamp_results_retention_days(value: int) -> int:
 
 def get_results_retention_days(db: Session) -> int:
     return _read_int(
-        db, RESULTS_RETENTION_DAYS_KEY,
-        default=settings.results_retention_days, clamp=clamp_results_retention_days,
+        db,
+        RESULTS_RETENTION_DAYS_KEY,
+        default=settings.results_retention_days,
+        clamp=clamp_results_retention_days,
     )
 
 
@@ -278,8 +288,10 @@ def clamp_export_retention_days(value: int) -> int:
 
 def get_export_retention_days(db: Session) -> int:
     return _read_int(
-        db, EXPORT_RETENTION_DAYS_KEY,
-        default=settings.export_retention_days, clamp=clamp_export_retention_days,
+        db,
+        EXPORT_RETENTION_DAYS_KEY,
+        default=settings.export_retention_days,
+        clamp=clamp_export_retention_days,
     )
 
 

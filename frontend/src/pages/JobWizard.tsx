@@ -22,6 +22,8 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { api, ApiError } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import NeoButton from "../components/neo/NeoButton";
+import NeoRadio from "../components/neo/NeoRadio";
+import NeoCheckbox from "../components/neo/NeoCheckbox";
 import ZipCascadeSelect from "../components/ZipCascadeSelect";
 import { KEYWORD_SEPARATORS, useJobDraft } from "../state/JobDraftContext";
 import { color, font } from "../theme/neobrutalist";
@@ -409,23 +411,21 @@ function StepEnrichment() {
     <StepPanel title="Enrichment" copy="Optional passes that run after a place is found. Each adds proxy bandwidth and runtime.">
       <ToggleRow
         title="Deep crawl"
-        copy="Follow internal links to find contact and about pages beyond the landing page. Installation-wide setting — applies to every job, not just this one."
+        copy="Follow internal links to find contact, mobile, decision makers, and about pages beyond the landing page. Installation-wide setting — applies to every job, not just this one."
         checked={settingsQuery.data?.deepCrawlEnabled ?? false}
         onChange={(v) => save.mutate({ deepCrawlEnabled: v })}
       />
       <ToggleRow
         title="Email verification"
-        copy="Confirm scraped emails actually accept mail before scoring them as high-quality leads."
-        checked={false}
-        disabled
-        disabledNote="Not yet available"
+        copy="Verify syntax and MX records for scraped email addresses."
+        checked={settingsQuery.data?.emailVerificationMode === "syntax_mx"}
+        onChange={(v) => save.mutate({ emailVerificationMode: v ? "syntax_mx" : "off" })}
       />
       <ToggleRow
         title="Tech fingerprint"
-        copy="Detect CMS, analytics, and ad-tech stack from each site's page source."
-        checked={false}
-        disabled
-        disabledNote="Not yet available"
+        copy="Detect CMS, analytics, and tech stack from each site's page source."
+        checked={settingsQuery.data?.techFingerprintEnabled ?? false}
+        onChange={(v) => save.mutate({ techFingerprintEnabled: v })}
       />
       <ToggleRow
         title="Adaptive subdivision depth"
@@ -476,13 +476,14 @@ function RadioRow({
         padding: 16,
         background: checked ? color.sand : color.white,
         border: `3px solid ${color.ink}`,
+        borderRadius: 0,
         cursor: disabled ? "default" : "pointer",
         opacity: disabled ? 0.6 : 1,
       }}
     >
-      <span style={{ width: 18, height: 18, border: `3px solid ${color.ink}`, display: "grid", placeItems: "center", flexShrink: 0, marginTop: 2 }}>
-        {checked && <span style={{ width: 8, height: 8, background: color.ink }} />}
-      </span>
+      <div style={{ marginTop: 2, flexShrink: 0 }}>
+        <NeoRadio checked={checked} onChange={onSelect} disabled={disabled} />
+      </div>
       <span>
         <p style={{ margin: 0, fontFamily: font.body, fontWeight: 700, fontSize: 13, color: color.ink }}>{label}</p>
         <p style={{ margin: "2px 0 0", fontFamily: font.body, fontSize: 12, color: color.ink60 }}>{copy}</p>
@@ -551,16 +552,10 @@ function StepReview({ name, onNameChange, runChoice, onRunChoiceChange, saveAsTe
       </div>
 
       <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
-        <span
-          onClick={() => onSaveAsTemplateChange(!saveAsTemplate)}
-          style={{ width: 18, height: 18, border: `3px solid ${color.ink}`, display: "grid", placeItems: "center", flexShrink: 0 }}
-        >
-          {saveAsTemplate && <span style={{ width: 8, height: 8, background: color.ink }} />}
-        </span>
-        <span style={{ fontFamily: font.body, fontSize: 13, color: color.ink }}>
+        <NeoCheckbox checked={saveAsTemplate} onChange={() => onSaveAsTemplateChange(!saveAsTemplate)} />
+        <span style={{ fontFamily: font.body, fontSize: 13, color: color.ink }} onClick={() => onSaveAsTemplateChange(!saveAsTemplate)}>
           Save this configuration as a reusable template
         </span>
-        <input type="checkbox" checked={saveAsTemplate} onChange={(e) => onSaveAsTemplateChange(e.target.checked)} style={{ display: "none" }} />
       </label>
 
       <div style={{ background: color.sand, border: `2px solid ${color.ink}`, padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>

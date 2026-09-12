@@ -85,9 +85,13 @@ def list_actors(
     _user: User = Depends(_require_owner),
     db: Session = Depends(get_app_db),
 ) -> dict:
-    rows = db.execute(
-        select(AuditEvent.actor_email).where(AuditEvent.actor_email.is_not(None)).distinct()
-    ).scalars().all()
+    rows = (
+        db.execute(
+            select(AuditEvent.actor_email).where(AuditEvent.actor_email.is_not(None)).distinct()
+        )
+        .scalars()
+        .all()
+    )
     return {"actors": sorted(rows)}
 
 
@@ -116,14 +120,16 @@ def export_csv(
     writer = csv.writer(buf)
     writer.writerow(["timestamp", "actor", "action", "target", "ip", "result"])
     for e in rows:
-        writer.writerow([
-            e.created_at.isoformat(),
-            e.actor_email or "",
-            e.action,
-            e.target or "",
-            e.ip_address or "",
-            "SUCCESS" if e.success else "FAILED",
-        ])
+        writer.writerow(
+            [
+                e.created_at.isoformat(),
+                e.actor_email or "",
+                e.action,
+                e.target or "",
+                e.ip_address or "",
+                "SUCCESS" if e.success else "FAILED",
+            ]
+        )
     buf.seek(0)
     return StreamingResponse(
         iter([buf.getvalue()]),

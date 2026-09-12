@@ -74,8 +74,9 @@ def publish_job_event(job_id: str, event_type: str, **fields: Any) -> None:
     key = stream_key(job_id)
     try:
         client = _sync_client()
-        client.xadd(key, {"payload": json.dumps(payload, default=str)}, maxlen=MAX_EVENTS,
-                    approximate=True)
+        client.xadd(
+            key, {"payload": json.dumps(payload, default=str)}, maxlen=MAX_EVENTS, approximate=True
+        )
         client.expire(key, EVENT_TTL_S)
         client.xadd(
             GLOBAL_STREAM_KEY,

@@ -77,18 +77,24 @@ function ConfirmDialog({
           border: `3px solid ${color.ink}`,
           boxShadow: shadow.md,
           zIndex: 1001,
-          padding: 20,
+          display: "flex",
+          flexDirection: "column",
         }}
       >
-        <p style={{ margin: 0, fontFamily: font.head, fontSize: 16, color: color.ink }}>{spec.title.toUpperCase()}</p>
-        <p style={{ margin: "12px 0 20px", fontFamily: font.body, fontSize: 13, color: color.ink60, lineHeight: 1.5 }}>{spec.body}</p>
-        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-          <NeoButton variant="ghost" size="sm" disabled={busy} onClick={onCancel}>
-            Keep it
-          </NeoButton>
-          <NeoButton variant="destructive" size="sm" loading={busy} onClick={onConfirm}>
-            {spec.verb}
-          </NeoButton>
+        <div style={{ borderBottom: `3px solid ${color.ink}`, background: color.pink, color: color.white, padding: "14px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span style={{ fontFamily: font.body, fontWeight: 700, fontSize: 14, letterSpacing: "0.28px", textTransform: "uppercase" }}>{spec.title}</span>
+          <button type="button" onClick={onCancel} style={{ border: "none", background: "transparent", color: color.white, cursor: "pointer", fontSize: 14 }}>✕</button>
+        </div>
+        <div style={{ padding: 20 }}>
+          <p style={{ margin: "0 0 20px", fontFamily: font.body, fontSize: 13, color: color.ink, lineHeight: 1.5 }}>{spec.body}</p>
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+            <NeoButton variant="secondary" size="sm" disabled={busy} onClick={onCancel}>
+              Keep it
+            </NeoButton>
+            <NeoButton variant="destructive" size="sm" loading={busy} onClick={onConfirm}>
+              {spec.verb}
+            </NeoButton>
+          </div>
         </div>
       </div>
     </>

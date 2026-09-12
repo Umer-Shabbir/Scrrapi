@@ -91,7 +91,9 @@ class ProxyPool:
 
         raise ValueError(f"Unknown proxy mode: {self.mode!r}")
 
-    def record_outcome(self, proxy_url: str | None, outcome: ProxyOutcome, *, latency_ms: int) -> None:
+    def record_outcome(
+        self, proxy_url: str | None, outcome: ProxyOutcome, *, latency_ms: int
+    ) -> None:
         """Update the Proxy row's running counters after a request that used
         `proxy_url`. No-op for "single"/"free" modes or a direct connection
         (no Proxy row exists to update) -- only "list" mode's DB-backed
@@ -107,7 +109,10 @@ class ProxyPool:
         db = AppSessionLocal()
         try:
             record_proxy_outcome(
-                db, host, port, outcome,
+                db,
+                host,
+                port,
+                outcome,
                 latency_ms=latency_ms,
                 consecutive_blocks=self._consecutive_blocks,
             )

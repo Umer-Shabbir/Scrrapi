@@ -29,6 +29,8 @@ DEFAULT_WEIGHTS = {
     "social": 5,
     "rating_high": 15,
     "rating_good": 8,
+    "decision_maker": 10,
+    "mobile_phone": 10,
 }
 
 
@@ -37,27 +39,33 @@ def lead_score(result: Result, weights: dict[str, int] | None = None) -> dict:
     reasons: list[str] = []
     total = 0
 
-    if result.phone and w["phone"]:
+    if result.phone and w.get("phone"):
         total += w["phone"]
         reasons.append(f"verified phone ({w['phone']:+d})")
-    if result.email and w["email"]:
+    if getattr(result, "mobile_phone", None) and w.get("mobile_phone"):
+        total += w["mobile_phone"]
+        reasons.append(f"direct mobile line ({w['mobile_phone']:+d})")
+    if getattr(result, "decision_maker", None) and w.get("decision_maker"):
+        total += w["decision_maker"]
+        reasons.append(f"decision maker identified ({w['decision_maker']:+d})")
+    if result.email and w.get("email"):
         total += w["email"]
         reasons.append(f"verified email ({w['email']:+d})")
-    if result.website and w["website"]:
+    if result.website and w.get("website"):
         total += w["website"]
         reasons.append(f"active website ({w['website']:+d})")
     if result.rating is not None:
-        if result.rating >= 4.5 and w["rating_high"]:
+        if result.rating >= 4.5 and w.get("rating_high"):
             total += w["rating_high"]
             reasons.append(f"high rating: {result.rating:g} ({w['rating_high']:+d})")
-        elif result.rating >= 4.0 and w["rating_good"]:
+        elif result.rating >= 4.0 and w.get("rating_good"):
             total += w["rating_good"]
             reasons.append(f"good rating: {result.rating:g} ({w['rating_good']:+d})")
     if result.tech_stack:
         total += 5
         reasons.append("active tech stack (+5)")
     social_count = sum(1 for field in SOCIAL_FIELDS if getattr(result, field))
-    if social_count and w["social"]:
+    if social_count and w.get("social"):
         social_points = min(abs(w["social"]) * 2, social_count * w["social"])
         total += social_points
         plural = "s" if social_count != 1 else ""

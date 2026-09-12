@@ -18,23 +18,26 @@ every in-flight row as stale on first deploy.
 
 Run against the app DB only: `alembic -x target=app upgrade app@head`.
 """
+
 import sqlalchemy as sa
 from alembic import op
 
-revision = 'd2f6a94c7b18'
-down_revision = 'b6e29f4c0a17'
+revision = "d2f6a94c7b18"
+down_revision = "b6e29f4c0a17"
 branch_labels = None
 depends_on = None
 
 
 def upgrade() -> None:
-    op.add_column('job_targets', sa.Column('heartbeat_at', sa.DateTime(), nullable=True))
+    op.add_column("job_targets", sa.Column("heartbeat_at", sa.DateTime(), nullable=True))
     op.create_index(
-        op.f('ix_job_targets_heartbeat_at'), 'job_targets', ['heartbeat_at'], unique=False
+        op.f("ix_job_targets_heartbeat_at"), "job_targets", ["heartbeat_at"], unique=False
     )
-    op.execute("UPDATE job_targets SET heartbeat_at = dispatched_at WHERE dispatched_at IS NOT NULL")
+    op.execute(
+        "UPDATE job_targets SET heartbeat_at = dispatched_at WHERE dispatched_at IS NOT NULL"
+    )
 
 
 def downgrade() -> None:
-    op.drop_index(op.f('ix_job_targets_heartbeat_at'), table_name='job_targets')
-    op.drop_column('job_targets', 'heartbeat_at')
+    op.drop_index(op.f("ix_job_targets_heartbeat_at"), table_name="job_targets")
+    op.drop_column("job_targets", "heartbeat_at")

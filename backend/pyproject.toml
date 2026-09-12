@@ -50,6 +50,12 @@ include = ["app*"]
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+extend-exclude = [
+    "patch_*.py",
+    "check_*.py",
+    "deps_*.py",
+    "*.patch",
+]
 
 # Pinned explicitly rather than left to ruff's defaults: the default rule set moves
 # between ruff releases, which turns "CI is green" into a function of whichever

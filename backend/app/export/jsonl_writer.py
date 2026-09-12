@@ -11,7 +11,9 @@ from app.export.csv_writer import resolve_columns
 from app.scraping.common.lead_score import lead_score
 
 
-def write_jsonl(results: list[Result], output_path: str, *, columns: list[str] | None = None) -> str:
+def write_jsonl(
+    results: list[Result], output_path: str, *, columns: list[str] | None = None
+) -> str:
     fields, include_score = resolve_columns(columns)
 
     with open(output_path, "w", encoding="utf-8") as fh:

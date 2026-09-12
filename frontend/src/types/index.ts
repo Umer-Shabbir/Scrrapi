@@ -114,6 +114,10 @@ export interface Result {
    */
   phone: string | null;
   email: string | null;
+  /** Direct mobile / personal phone lines. */
+  mobilePhone: string | null;
+  /** Discovered decision maker (Owner, Founder, CEO names). */
+  decisionMaker: string | null;
   website: string | null;
   latitude: number | null;
   longitude: number | null;
@@ -137,6 +141,14 @@ export interface Result {
   suppressed: boolean;
   /** From the place scraper's own listing data. Never set by anything else. */
   rating: number | null;
+  /** Total review count from Google Maps listing. */
+  reviewsCount: number | null;
+  /** Sentiment analysis score (0.0 to 1.0). */
+  sentimentScore: number | null;
+  /** Sentiment label (Positive, Neutral, Mixed, Negative). */
+  sentimentLabel: string | null;
+  /** Extracted pain points / complaints summary from customer reviews. */
+  painPoints: string | null;
   /** "maps listing" | "site crawl" | null -- which stage first supplied the value. */
   phoneSource: string | null;
   emailSource: string | null;
@@ -318,6 +330,8 @@ export interface ScoreWeights {
   social: number;
   rating_high: number;
   rating_good: number;
+  decision_maker: number;
+  mobile_phone: number;
 }
 
 // Mirrors GET/PATCH /api/settings (backend/app/api/routers/settings.py).
@@ -406,12 +420,13 @@ export type ExportFormat = "csv" | "xlsx" | "kml";
 
 // Mirrors app/db/models/export.py::COLUMN_GROUPS. "reviews" from the Figma
 // IDENTITY group is deliberately absent -- no review-count field exists.
-export type ExportColumnGroup = "identity" | "contact" | "location" | "scoring";
+export type ExportColumnGroup = "identity" | "contact" | "location" | "sentiment" | "scoring";
 
 export const EXPORT_COLUMN_GROUPS: { key: ExportColumnGroup; label: string; fields: string }[] = [
-  { key: "identity", label: "Identity", fields: "Name · Category · Rating" },
-  { key: "contact", label: "Contact", fields: "Phone · Website · Email" },
+  { key: "identity", label: "Identity", fields: "Name · Category · Rating · Reviews · Decision Maker" },
+  { key: "contact", label: "Contact", fields: "Phone · Mobile · Website · Email · Socials" },
   { key: "location", label: "Location", fields: "Address · City · State · Zip · Lat/Lng" },
+  { key: "sentiment", label: "Sentiment", fields: "Sentiment Score · Label · Customer Pain Points" },
   { key: "scoring", label: "Scoring", fields: "Score · Signals" },
 ];
 

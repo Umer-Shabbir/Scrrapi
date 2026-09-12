@@ -466,29 +466,51 @@ def seed(
     # Lahore. Loaded even under --countries, where the place *rows* are skipped,
     # so a dev subset resolves cities the same way a full run does.
     resolver = CityResolver()
-    places: list[tuple[str, str, str]] = []
+    places: list[tuple[str, str, str, float, float]] = []
     if use_places:
         print("== Reading populated places")
         for code, admin1, name, lat, lon in populated_place_rows(cache_dir):
             if wanted is not None and code not in wanted:
                 continue
             resolver.add_place(code, admin1, name, lat, lon)
-            places.append((code, admin1, name))
+            places.append((code, admin1, name, lat, lon))
 
     # --- pass 1: distinct keys ------------------------------------------
     print("== Pass 1/2 — scanning postal areas")
     seen_countries: set[str] = set()
     region_names: dict[tuple[str, str], str] = {}
-    city_keys: set[tuple[str, str, str]] = set()
+    city_keys: dict[tuple[str, str, str], tuple[float | None, float | None]] = {}
 
-    def note(code: str, rkey: str, rname: str, city: str | None) -> None:
+    def note(
+        code: str,
+        rkey: str,
+        rname: str,
+        city: str | None,
+        lat: float | None = None,
+        lon: float | None = None,
+    ) -> None:
         seen_countries.add(code)
         if (code, rkey) not in region_names:
             region_names[(code, rkey)] = (
                 admin1_names.get((code, rkey)) or rname or UNKNOWN_REGION
             )
         if city:
-            city_keys.add((code, rkey, city))
+            key = (code, rkey, city)
+            # Standardize coordinates, prefer first non-null
+            if key not in city_keys:
+                city_keys[key] = (lat, lon)
+            else:
+                existing_lat, existing_lon = city_keys[key]
+                if existing_lat is None and lat is not None:
+                    city_keys[key] = (lat, lon)
+
+    def parse_float(val: str | None) -> float | None:
+        if not val:
+            return None
+        try:
+            return float(val)
+        except ValueError:
+            return None
 
     for row in postal_rows(cache_dir, countries_filter):
         code = (row["country_code"] or "").strip().upper()
@@ -496,7 +518,18 @@ def seed(
         if not code or not postal:
             continue
         rkey = region_key_for(row["admin_code1"], row["admin_name1"])
-        note(code, rkey, (row["admin_name1"] or "").strip(), city_for(resolver, code, rkey, row))
+
+        lat = parse_float(row.get("latitude"))
+        lon = parse_float(row.get("longitude"))
+
+        note(
+            code,
+            rkey,
+            (row["admin_name1"] or "").strip(),
+            city_for(resolver, code, rkey, row),
+            lat,
+            lon,
+        )
 
     # Every country and division, including those the postal export never
     # mentions -- otherwise the dropdowns simply stop at the 121 countries
@@ -507,8 +540,8 @@ def seed(
         for (code, admin1), name in admin1_names.items():
             region_names.setdefault((code, admin1), name)
 
-    for code, admin1, name in places:
-        note(code, region_key_for(admin1, ""), "", name)
+    for code, admin1, name, lat, lon in places:
+        note(code, region_key_for(admin1, ""), "", name, lat, lon)
 
     print(
         f"  {len(seen_countries):,} countries, {len(region_names):,} regions, "
@@ -522,25 +555,25 @@ def seed(
     copy_rows(
         session,
         "country",
-        ["id", "code", "name"],
-        ((country_id(c), c, country_names.get(c, c)) for c in sorted(seen_countries)),
+        ["id", "code", "name", "latitude", "longitude"],
+        ((country_id(c), c, country_names.get(c, c), None, None) for c in sorted(seen_countries)),
     )
     copy_rows(
         session,
         "region",
-        ["id", "country_id", "name"],
+        ["id", "country_id", "name", "latitude", "longitude"],
         (
-            (region_id(code, rkey), country_id(code), name)
+            (region_id(code, rkey), country_id(code), name, None, None)
             for (code, rkey), name in region_names.items()
         ),
     )
     copy_rows(
         session,
         "city",
-        ["id", "region_id", "name"],
+        ["id", "region_id", "name", "latitude", "longitude"],
         (
-            (city_id(code, rkey, city), region_id(code, rkey), city)
-            for code, rkey, city in city_keys
+            (city_id(code, rkey, city), region_id(code, rkey), city, lat, lon)
+            for (code, rkey, city), (lat, lon) in city_keys.items()
         ),
     )
 
@@ -571,9 +604,15 @@ def seed(
             if zid.bytes in seen_zip_ids:
                 continue
             seen_zip_ids.add(zid.bytes)
-            yield zid, city_id(code, rkey, city), postal
 
-    zips = copy_rows(session, "zip_code", ["id", "city_id", "code"], zip_tuples())
+            lat = parse_float(row.get("latitude"))
+            lon = parse_float(row.get("longitude"))
+
+            yield zid, city_id(code, rkey, city), postal, lat, lon
+
+    zips = copy_rows(
+        session, "zip_code", ["id", "city_id", "code", "latitude", "longitude"], zip_tuples()
+    )
 
     session.commit()
 

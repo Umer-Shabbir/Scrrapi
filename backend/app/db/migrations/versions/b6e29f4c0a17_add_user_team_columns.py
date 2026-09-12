@@ -17,30 +17,39 @@ promotes someone via the screen this migration backs.
 
 Run against the app DB only: `alembic -x target=app upgrade app@head`.
 """
+
 import sqlalchemy as sa
 from alembic import op
 
-revision = 'b6e29f4c0a17'
-down_revision = 'a7c3e0f56d21'
+revision = "b6e29f4c0a17"
+down_revision = "a7c3e0f56d21"
 branch_labels = None
 depends_on = None
 
 
 def upgrade() -> None:
-    op.add_column('users', sa.Column('role', sa.String(length=20), nullable=False, server_default='viewer'))
-    op.add_column('users', sa.Column('disabled_at', sa.DateTime(), nullable=True))
-    op.add_column('users', sa.Column('last_seen_at', sa.DateTime(), nullable=True))
+    op.add_column(
+        "users",
+        sa.Column("role", sa.String(length=20), nullable=False, server_default="viewer"),
+    )
+    op.add_column("users", sa.Column("disabled_at", sa.DateTime(), nullable=True))
+    op.add_column("users", sa.Column("last_seen_at", sa.DateTime(), nullable=True))
 
-    users = sa.table('users', sa.column('id', sa.Uuid()), sa.column('created_at', sa.DateTime()), sa.column('role', sa.String()))
+    users = sa.table(
+        "users",
+        sa.column("id", sa.Uuid()),
+        sa.column("created_at", sa.DateTime()),
+        sa.column("role", sa.String()),
+    )
     connection = op.get_bind()
     owner_id = connection.execute(
         sa.select(users.c.id).order_by(users.c.created_at.asc()).limit(1)
     ).scalar()
     if owner_id is not None:
-        connection.execute(users.update().where(users.c.id == owner_id).values(role='owner'))
+        connection.execute(users.update().where(users.c.id == owner_id).values(role="owner"))
 
 
 def downgrade() -> None:
-    op.drop_column('users', 'last_seen_at')
-    op.drop_column('users', 'disabled_at')
-    op.drop_column('users', 'role')
+    op.drop_column("users", "last_seen_at")
+    op.drop_column("users", "disabled_at")
+    op.drop_column("users", "role")

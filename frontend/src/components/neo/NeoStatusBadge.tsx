@@ -16,7 +16,7 @@ const FILL: Record<JobStatus, string> = {
 };
 
 const GLYPH: Record<JobStatus, string> = {
-  queued: "•",
+  queued: "●",
   running: "●",
   paused: "!",
   done: "✓",
@@ -49,7 +49,7 @@ export default function NeoStatusBadge({ status }: { status: JobStatus }) {
       }}
     >
       <span className={status === "running" ? "neo-pulse-square" : undefined} style={{ display: "inline-block" }}>
-        {GLYPH[status] ?? "•"}
+        {GLYPH[status] ?? "●"}
       </span>{" "}
       {status}
     </span>

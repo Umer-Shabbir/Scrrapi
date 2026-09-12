@@ -85,7 +85,11 @@ SHARE_MARKERS = (
 # Per-network paths that are content, not an account: a linked video or post
 # tells us nothing about which account owns it.
 CONTENT_MARKERS: dict[str, tuple[str, ...]] = {
-    "facebook": ("/photo", "/events/", "/groups/",),
+    "facebook": (
+        "/photo",
+        "/events/",
+        "/groups/",
+    ),
     "instagram": ("/p/", "/reel/", "/reels/", "/explore/", "/stories/"),
     "twitter": ("/status/", "/hashtag/", "/search"),
     "youtube": ("/watch", "/shorts/", "/playlist"),

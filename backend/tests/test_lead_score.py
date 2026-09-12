@@ -10,10 +10,20 @@ from app.scraping.common.lead_score import lead_score
 
 def _result(**overrides) -> Result:
     defaults = dict(
-        id=uuid.uuid4(), job_id=uuid.uuid4(),
-        phone=None, email=None, website=None, rating=None, tech_stack=None,
-        facebook=None, instagram=None, linkedin=None, twitter=None,
-        youtube=None, tiktok=None, whatsapp=None,
+        id=uuid.uuid4(),
+        job_id=uuid.uuid4(),
+        phone=None,
+        email=None,
+        website=None,
+        rating=None,
+        tech_stack=None,
+        facebook=None,
+        instagram=None,
+        linkedin=None,
+        twitter=None,
+        youtube=None,
+        tiktok=None,
+        whatsapp=None,
     )
     defaults.update(overrides)
     return Result(**defaults)
@@ -27,8 +37,14 @@ def test_empty_lead_scores_zero() -> None:
 def test_full_signals_cap_at_100() -> None:
     score = lead_score(
         _result(
-            phone="555-0100", email="a@b.com", website="b.com", rating=4.9,
-            tech_stack="WordPress", facebook="x", instagram="x", linkedin="x",
+            phone="555-0100",
+            email="a@b.com",
+            website="b.com",
+            rating=4.9,
+            tech_stack="WordPress",
+            facebook="x",
+            instagram="x",
+            linkedin="x",
         )
     )
     # 20 + 20 + 15 + 15 + 5 + min(10, 3*5)=10 -> 85, well under 100; cap is
@@ -50,11 +66,23 @@ def test_social_points_cap_at_ten_regardless_of_profile_count() -> None:
     three = lead_score(_result(facebook="x", instagram="x", linkedin="x"))
     seven = lead_score(
         _result(
-            facebook="x", instagram="x", linkedin="x", twitter="x",
-            youtube="x", tiktok="x", whatsapp="x",
+            facebook="x",
+            instagram="x",
+            linkedin="x",
+            twitter="x",
+            youtube="x",
+            tiktok="x",
+            whatsapp="x",
         )
     )
     assert three["value"] == 10
     assert seven["value"] == 10
     assert "3 social profiles (+10)" in three["reasons"]
     assert "7 social profiles (+10)" in seven["reasons"]
+
+
+def test_decision_maker_and_mobile_scoring() -> None:
+    score = lead_score(_result(decision_maker="Alice (Owner)", mobile_phone="555-0999"))
+    assert score["value"] == 20
+    assert "decision maker identified (+10)" in score["reasons"]
+    assert "direct mobile line (+10)" in score["reasons"]

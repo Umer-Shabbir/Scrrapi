@@ -13,7 +13,6 @@ for why matching is exact rather than substring/subdomain.
 """
 
 import uuid
-from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel, Field
@@ -23,7 +22,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_app_db, get_current_user
 from app.core.audit import client_ip, log_audit_event
 from app.db.models.result import Result, ResultHistory
-from app.db.models.suppression import SUPPRESSION_KINDS, SuppressionEntry
+from app.db.models.suppression import SuppressionEntry
 from app.db.models.user import User
 from app.scraping.common.suppression import (
     normalize_domain,
@@ -109,11 +108,15 @@ def list_suppression(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_app_db),
 ) -> list[dict]:
-    entries = db.execute(
-        select(SuppressionEntry)
-        .where(SuppressionEntry.kind == kind)
-        .order_by(SuppressionEntry.created_at.desc())
-    ).scalars().all()
+    entries = (
+        db.execute(
+            select(SuppressionEntry)
+            .where(SuppressionEntry.kind == kind)
+            .order_by(SuppressionEntry.created_at.desc())
+        )
+        .scalars()
+        .all()
+    )
     return [_entry_dict(db, e) for e in entries]
 
 
@@ -143,8 +146,11 @@ def create_suppression(
 
     removed = _delete_matches(db, payload.kind, normalized)
     log_audit_event(
-        db, actor_email=user.email, action="suppression.created",
-        target=f"{payload.kind}:{normalized}", ip_address=client_ip(request),
+        db,
+        actor_email=user.email,
+        action="suppression.created",
+        target=f"{payload.kind}:{normalized}",
+        ip_address=client_ip(request),
     )
     db.commit()
 
@@ -168,7 +174,8 @@ def bulk_create_suppression(
     total_removed = 0
 
     existing_values = {
-        v for (v,) in db.execute(
+        v
+        for (v,) in db.execute(
             select(SuppressionEntry.value).where(SuppressionEntry.kind == payload.kind)
         ).all()
     }
@@ -187,7 +194,9 @@ def bulk_create_suppression(
         created += 1
 
     log_audit_event(
-        db, actor_email=user.email, action="suppression.bulk_created",
+        db,
+        actor_email=user.email,
+        action="suppression.bulk_created",
         target=f"{payload.kind} ({created} added, {skipped} skipped)",
         ip_address=client_ip(request),
     )
@@ -218,8 +227,11 @@ def delete_suppression(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="entry not found")
 
     log_audit_event(
-        db, actor_email=user.email, action="suppression.removed",
-        target=f"{entry.kind}:{entry.value}", ip_address=client_ip(request),
+        db,
+        actor_email=user.email,
+        action="suppression.removed",
+        target=f"{entry.kind}:{entry.value}",
+        ip_address=client_ip(request),
     )
     db.delete(entry)
     db.commit()

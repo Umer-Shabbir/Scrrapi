@@ -236,12 +236,16 @@ const DEFAULT_SCORE_WEIGHTS: ScoreWeights = {
   social: 5,
   rating_high: 15,
   rating_good: 8,
+  decision_maker: 10,
+  mobile_phone: 10,
 };
 
 const SIGNAL_LABELS: [keyof ScoreWeights, string][] = [
   ["email", "Has email"],
   ["website", "Has website"],
   ["phone", "Has phone"],
+  ["mobile_phone", "Has direct mobile line"],
+  ["decision_maker", "Has decision maker (Owner/CEO)"],
   ["social", "Has ≥1 social profile (per profile, capped)"],
   ["rating_high", "Rating ≥ 4.5"],
   ["rating_good", "Rating ≥ 4.0 (and < 4.5)"],
@@ -303,6 +307,8 @@ function computePreviewScore(w: ScoreWeights, signals: Partial<Record<keyof Scor
   if (signals.email) total += w.email;
   if (signals.website) total += w.website;
   if (signals.phone) total += w.phone;
+  if (signals.mobile_phone) total += w.mobile_phone;
+  if (signals.decision_maker) total += w.decision_maker;
   const socialCount = Number(signals.social_count || 0);
   if (socialCount) total += Math.min(Math.abs(w.social) * 2, socialCount * w.social);
   if (signals.rating_high) total += w.rating_high;
@@ -334,7 +340,7 @@ function PurgeResultsModal({ onCancel, onConfirm, pending }: { onCancel: () => v
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(17,17,17,0.7)", display: "grid", placeItems: "center", zIndex: 1000 }}>
       <div style={{ background: color.white, border: `3px solid ${color.ink}`, boxShadow: shadow.md, width: 440 }}>
-        <div style={{ background: color.pink, color: color.white, padding: "14px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ borderBottom: `3px solid ${color.ink}`, background: color.pink, color: color.white, padding: "14px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span style={{ fontFamily: font.body, fontWeight: 700, fontSize: 14, letterSpacing: "0.28px", textTransform: "uppercase" }}>Purge all results</span>
           <button type="button" onClick={onCancel} style={{ border: "none", background: "transparent", color: color.white, cursor: "pointer", fontSize: 14 }}>✕</button>
         </div>
@@ -368,7 +374,7 @@ function ResetSettingsModal({ onCancel, onConfirm, pending }: { onCancel: () => 
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(17,17,17,0.7)", display: "grid", placeItems: "center", zIndex: 1000 }}>
       <div style={{ background: color.white, border: `3px solid ${color.ink}`, boxShadow: shadow.md, width: 440 }}>
-        <div style={{ background: color.pink, color: color.white, padding: "14px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ borderBottom: `3px solid ${color.ink}`, background: color.pink, color: color.white, padding: "14px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span style={{ fontFamily: font.body, fontWeight: 700, fontSize: 14, letterSpacing: "0.28px", textTransform: "uppercase" }}>Reset settings</span>
           <button type="button" onClick={onCancel} style={{ border: "none", background: "transparent", color: color.white, cursor: "pointer", fontSize: 14 }}>✕</button>
         </div>
@@ -458,7 +464,7 @@ export default function Settings() {
     if (!settings) return;
     setConcurrency(settings.concurrentTargets);
     setCrawlPages(settings.deepCrawlMaxPages);
-  }, [settings?.concurrentTargets, settings?.deepCrawlMaxPages]);
+  }, [settings, settings?.concurrentTargets, settings?.deepCrawlMaxPages]);
 
   if (settingsQuery.isLoading) {
     return (
@@ -598,7 +604,7 @@ export default function Settings() {
             ))}
           </div>
           <span style={{ fontFamily: font.body, fontSize: 11, color: color.ink60 }}>
-            Syntax validation always runs during extraction. "Syntax + MX" adds a DNS MX-record
+            Syntax validation always runs during extraction. &quot;Syntax + MX&quot; adds a DNS MX-record
             check but is not yet wired into the live scrape path — the setting is saved for when
             it is.
           </span>

@@ -16,8 +16,11 @@ from app.scraping.common.suppression import (
 
 def _result(**overrides) -> Result:
     defaults = dict(
-        id=uuid.uuid4(), job_id=uuid.uuid4(),
-        website=None, email=None, place_key=None,
+        id=uuid.uuid4(),
+        job_id=uuid.uuid4(),
+        website=None,
+        email=None,
+        place_key=None,
     )
     defaults.update(overrides)
     return Result(**defaults)

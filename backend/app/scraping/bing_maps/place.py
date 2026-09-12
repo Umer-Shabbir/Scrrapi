@@ -29,8 +29,10 @@ PHONE_SELECTOR = 'a[href^="tel:"]'
 WEBSITE_SELECTOR = 'a[class*="website"], a[data-tag="websiteText"]'
 CATEGORY_SELECTOR = 'div[class*="category"]'
 RATING_SELECTOR = 'div[class*="rating"] span'
+REVIEWS_COUNT_SELECTOR = 'span[class*="reviewCount"], div[class*="rating"] + span'
 
 RATING_RE = re.compile(r"(\d+(?:[.,]\d+)?)")
+REVIEWS_COUNT_RE = re.compile(r"\(?([\d,.\s]+)\)?")
 
 # Bing Maps centers the map on the entity's coordinates via a `cp=<lat>~<lng>` query
 # param on the URL once a place is opened -- no separate DOM lookup needed.
@@ -98,6 +100,10 @@ async def get_place_data(place_url: str) -> PlaceData:
                     if rating is not None:
                         data["rating"] = rating
 
+                    reviews_count = await _reviews_count(page.locator(REVIEWS_COUNT_SELECTOR).first)
+                    if reviews_count is not None:
+                        data["reviews_count"] = reviews_count
+
                     data["website"] = await _href(page.locator(WEBSITE_SELECTOR).first)
 
                     latitude, longitude = _lat_lng_from_url(page.url)
@@ -107,13 +113,16 @@ async def get_place_data(place_url: str) -> PlaceData:
                 finally:
                     await browser.close()
         except RateLimited:
-            pool.record_outcome(raw_proxy, "blocked", latency_ms=int((time.monotonic() - started) * 1000))
+            latency = int((time.monotonic() - started) * 1000)
+            pool.record_outcome(raw_proxy, "blocked", latency_ms=latency)
             raise
         except Exception:
-            pool.record_outcome(raw_proxy, "failure", latency_ms=int((time.monotonic() - started) * 1000))
+            latency = int((time.monotonic() - started) * 1000)
+            pool.record_outcome(raw_proxy, "failure", latency_ms=latency)
             raise
         else:
-            pool.record_outcome(raw_proxy, "success", latency_ms=int((time.monotonic() - started) * 1000))
+            latency = int((time.monotonic() - started) * 1000)
+            pool.record_outcome(raw_proxy, "success", latency_ms=latency)
 
         logger.info("place scraped", extra={"fields": sorted(data)})
         return data
@@ -153,6 +162,17 @@ async def _rating(locator: Locator) -> float | None:
     if not match:
         return None
     return float(match.group(1).replace(",", "."))
+
+
+async def _reviews_count(locator: Locator) -> int | None:
+    text = await _inner_text(locator)
+    if not text:
+        return None
+    match = REVIEWS_COUNT_RE.search(text)
+    if not match:
+        return None
+    digits = re.sub(r"\D", "", match.group(1))
+    return int(digits) if digits else None
 
 
 def _lat_lng_from_url(url: str) -> tuple[float | None, float | None]:

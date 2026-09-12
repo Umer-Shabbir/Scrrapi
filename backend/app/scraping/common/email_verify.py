@@ -35,9 +35,7 @@ def has_mx_record(domain: str) -> bool:
     machinery this function doesn't need yet.
     """
     try:
-        answer = dns.resolver.resolve(
-            domain, "MX", lifetime=_RESOLVER_TIMEOUT_S
-        )
+        answer = dns.resolver.resolve(domain, "MX", lifetime=_RESOLVER_TIMEOUT_S)
         return len(answer) > 0
     except (
         dns.resolver.NXDOMAIN,

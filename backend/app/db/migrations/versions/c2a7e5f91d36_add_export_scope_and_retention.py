@@ -27,26 +27,27 @@ with no record of what was written or for how long.
 
 Run against the app DB only: `alembic -x target=app upgrade app@head`.
 """
+
 import sqlalchemy as sa
 from alembic import op
 
-revision = 'c2a7e5f91d36'
-down_revision = 'b4f9d2e6a813'
+revision = "c2a7e5f91d36"
+down_revision = "b4f9d2e6a813"
 branch_labels = None
 depends_on = None
 
 
 def upgrade() -> None:
-    op.add_column('exports', sa.Column('columns', sa.String(length=200), nullable=True))
-    op.add_column('exports', sa.Column('row_scope', sa.String(length=20), nullable=True))
-    op.add_column('exports', sa.Column('row_count', sa.Integer(), nullable=True))
-    op.add_column('exports', sa.Column('size_bytes', sa.Integer(), nullable=True))
-    op.add_column('exports', sa.Column('expires_at', sa.DateTime(), nullable=True))
+    op.add_column("exports", sa.Column("columns", sa.String(length=200), nullable=True))
+    op.add_column("exports", sa.Column("row_scope", sa.String(length=20), nullable=True))
+    op.add_column("exports", sa.Column("row_count", sa.Integer(), nullable=True))
+    op.add_column("exports", sa.Column("size_bytes", sa.Integer(), nullable=True))
+    op.add_column("exports", sa.Column("expires_at", sa.DateTime(), nullable=True))
 
 
 def downgrade() -> None:
-    op.drop_column('exports', 'expires_at')
-    op.drop_column('exports', 'size_bytes')
-    op.drop_column('exports', 'row_count')
-    op.drop_column('exports', 'row_scope')
-    op.drop_column('exports', 'columns')
+    op.drop_column("exports", "expires_at")
+    op.drop_column("exports", "size_bytes")
+    op.drop_column("exports", "row_count")
+    op.drop_column("exports", "row_scope")
+    op.drop_column("exports", "columns")

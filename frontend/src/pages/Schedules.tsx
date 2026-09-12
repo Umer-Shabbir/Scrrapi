@@ -160,12 +160,12 @@ function NewScheduleDrawer({ templates, onClose, onCreated }: { templates: JobTe
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(17,17,17,0.7)", display: "flex", justifyContent: "flex-end", zIndex: 1000 }}>
-      <div className="neo-responsive-fill" style={{ width: 480, background: color.white, borderLeft: `3px solid ${color.ink}`, boxShadow: "-10px 0px 0px 0px #111", height: "100%", overflowY: "auto", padding: 24, boxSizing: "border-box", display: "flex", flexDirection: "column", gap: 20 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h2 style={{ margin: 0, fontFamily: font.head, fontSize: 18, color: color.ink }}>NEW SCHEDULE</h2>
-          <button type="button" onClick={onClose} style={{ border: "none", background: "transparent", cursor: "pointer", fontSize: 16 }}>✕</button>
+      <div className="neo-responsive-fill" style={{ width: 480, background: color.white, borderLeft: `3px solid ${color.ink}`, boxShadow: "-10px 0px 0px 0px #111", height: "100%", display: "flex", flexDirection: "column" }}>
+        <div style={{ borderBottom: `3px solid ${color.ink}`, background: color.ink, color: color.white, padding: "14px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
+          <span style={{ fontFamily: font.body, fontWeight: 700, fontSize: 14, letterSpacing: "0.28px", textTransform: "uppercase" }}>NEW SCHEDULE</span>
+          <button type="button" onClick={onClose} style={{ border: "none", background: "transparent", color: color.white, cursor: "pointer", fontSize: 16 }}>✕</button>
         </div>
-
+        <div style={{ flex: 1, overflowY: "auto", padding: 24, boxSizing: "border-box", display: "flex", flexDirection: "column", gap: 20 }}>
         <div>
           <p style={{ margin: "0 0 6px", fontFamily: font.body, fontWeight: 700, fontSize: "10.5px", letterSpacing: "0.3675px", textTransform: "uppercase", color: color.ink }}>Name</p>
           <input
@@ -302,6 +302,7 @@ function NewScheduleDrawer({ templates, onClose, onCreated }: { templates: JobTe
           >
             Create schedule
           </NeoButton>
+        </div>
         </div>
       </div>
     </div>

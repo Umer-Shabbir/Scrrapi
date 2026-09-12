@@ -40,7 +40,9 @@ import httpx
 from bs4 import BeautifulSoup
 
 from app.core.config import get_settings
+from app.scraping.common.decision_maker_miner import extract_decision_makers
 from app.scraping.common.email_miner import extract_emails, is_valid_email
+from app.scraping.common.mobile_miner import extract_mobile_phones
 from app.scraping.common.phone_miner import extract_phones, phone_key
 from app.scraping.common.social_miner import extract_social_links
 from app.scraping.common.structured_data import extract_structured_contacts
@@ -55,28 +57,79 @@ logger = logging.getLogger(__name__)
 PAGE_HINTS: list[tuple[tuple[str, ...], int]] = [
     (
         (
-            "contact", "contacts", "contact-us", "contactus", "contact_us",
-            "kontakt", "kontakta", "contacto", "contatti", "contato", "contactez",
-            "nous-contacter", "iletisim", "connect", "get-in-touch", "getintouch",
-            "reach-us", "enquiry", "enquiries", "inquiry", "impressum", "imprint",
-            "mentions-legales", "aviso-legal", "colofon",
+            "contact",
+            "contacts",
+            "contact-us",
+            "contactus",
+            "contact_us",
+            "kontakt",
+            "kontakta",
+            "contacto",
+            "contatti",
+            "contato",
+            "contactez",
+            "nous-contacter",
+            "iletisim",
+            "connect",
+            "get-in-touch",
+            "getintouch",
+            "reach-us",
+            "enquiry",
+            "enquiries",
+            "inquiry",
+            "impressum",
+            "imprint",
+            "mentions-legales",
+            "aviso-legal",
+            "colofon",
         ),
         100,
     ),
     (
         (
-            "about", "about-us", "aboutus", "about_us", "ueber-uns", "uber-uns",
-            "quienes-somos", "chi-siamo", "a-propos", "om-oss", "team", "our-team",
-            "staff", "people", "management", "leadership", "meet-the-team",
+            "about",
+            "about-us",
+            "aboutus",
+            "about_us",
+            "ueber-uns",
+            "uber-uns",
+            "quienes-somos",
+            "chi-siamo",
+            "a-propos",
+            "om-oss",
+            "team",
+            "our-team",
+            "staff",
+            "people",
+            "management",
+            "leadership",
+            "meet-the-team",
         ),
         70,
     ),
     (
         (
-            "location", "locations", "branch", "branches", "office", "offices",
-            "stores", "store-locator", "find-us", "visit", "directions",
-            "support", "help", "customer-service", "service", "book", "booking",
-            "appointment", "quote", "estimate", "franchise",
+            "location",
+            "locations",
+            "branch",
+            "branches",
+            "office",
+            "offices",
+            "stores",
+            "store-locator",
+            "find-us",
+            "visit",
+            "directions",
+            "support",
+            "help",
+            "customer-service",
+            "service",
+            "book",
+            "booking",
+            "appointment",
+            "quote",
+            "estimate",
+            "franchise",
         ),
         45,
     ),
@@ -90,16 +143,63 @@ PAGE_HINTS: list[tuple[tuple[str, ...], int]] = [
 
 # Never worth a request: binaries, assets, and pages that exist to change state.
 SKIP_EXTENSIONS = (
-    ".pdf", ".jpg", ".jpeg", ".png", ".gif", ".svg", ".webp", ".ico", ".bmp",
-    ".css", ".js", ".json", ".zip", ".rar", ".7z", ".gz", ".tar", ".mp3", ".mp4",
-    ".avi", ".mov", ".wmv", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx",
-    ".exe", ".dmg", ".apk", ".woff", ".woff2", ".ttf", ".eot", ".rss", ".csv",
+    ".pdf",
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".gif",
+    ".svg",
+    ".webp",
+    ".ico",
+    ".bmp",
+    ".css",
+    ".js",
+    ".json",
+    ".zip",
+    ".rar",
+    ".7z",
+    ".gz",
+    ".tar",
+    ".mp3",
+    ".mp4",
+    ".avi",
+    ".mov",
+    ".wmv",
+    ".doc",
+    ".docx",
+    ".xls",
+    ".xlsx",
+    ".ppt",
+    ".pptx",
+    ".exe",
+    ".dmg",
+    ".apk",
+    ".woff",
+    ".woff2",
+    ".ttf",
+    ".eot",
+    ".rss",
+    ".csv",
 )
 
 SKIP_PATH_MARKERS = (
-    "/wp-admin", "/wp-json", "/wp-content", "/cdn-cgi/", "/cart", "/checkout",
-    "/basket", "/my-account", "/login", "/signin", "/sign-in", "/register",
-    "/logout", "/feed", "add-to-cart", "/comment", "?replytocom",
+    "/wp-admin",
+    "/wp-json",
+    "/wp-content",
+    "/cdn-cgi/",
+    "/cart",
+    "/checkout",
+    "/basket",
+    "/my-account",
+    "/login",
+    "/signin",
+    "/sign-in",
+    "/register",
+    "/logout",
+    "/feed",
+    "add-to-cart",
+    "/comment",
+    "?replytocom",
 )
 
 # A page that is 8MB of inlined base64 is not going to yield a phone number that
@@ -111,6 +211,9 @@ PARSE_CHARS_CAP = 400_000
 MAX_EMAILS = 25
 MAX_PHONES = 15
 MAX_SOCIALS_PER_NETWORK = 3
+MAX_DECISION_MAKERS = 10
+MAX_MOBILES = 10
+MAX_REVIEWS = 25
 
 
 @dataclass(frozen=True)
@@ -136,6 +239,9 @@ class SiteContacts:
     emails: list[str] = field(default_factory=list)
     phones: list[str] = field(default_factory=list)
     socials: dict[str, list[str]] = field(default_factory=dict)
+    mobile_phones: list[str] = field(default_factory=list)
+    decision_makers: list[dict[str, str]] = field(default_factory=list)
+    reviews: list[str] = field(default_factory=list)
     pages_crawled: int = 0
     pages_discovered: int = 0
     #: True when the budget ran out with URLs still queued -- i.e. the site has
@@ -143,7 +249,9 @@ class SiteContacts:
     truncated: bool = False
 
     def is_empty(self) -> bool:
-        return not (self.emails or self.phones or self.socials)
+        return not (
+            self.emails or self.phones or self.socials or self.mobile_phones or self.decision_makers
+        )
 
 
 def budget_from_settings(max_pages: int | None = None) -> CrawlBudget:
@@ -220,10 +328,7 @@ async def _crawl(start_url: str, budget: CrawlBudget, client: httpx.AsyncClient)
             visited.add(url)
 
         pages = await asyncio.gather(
-            *(
-                _fetch_page(client, url, budget, robots, user_agent)
-                for url, _ in batch
-            )
+            *(_fetch_page(client, url, budget, robots, user_agent) for url, _ in batch)
         )
 
         for (_queued_url, depth), page in zip(batch, pages, strict=True):
@@ -342,9 +447,7 @@ async def _sitemap_urls(
     if robots is not None:
         candidates.extend(robots.site_maps() or [])
     origin = _origin(start_url)
-    candidates.extend(
-        urljoin(origin, path) for path in ("/sitemap.xml", "/sitemap_index.xml")
-    )
+    candidates.extend(urljoin(origin, path) for path in ("/sitemap.xml", "/sitemap_index.xml"))
 
     urls: list[str] = []
     seen_sitemaps: set[str] = set()
@@ -533,7 +636,7 @@ def _absorb(contacts: SiteContacts, html: str, url: str) -> None:
         tag.decompose()
     text = soup.get_text(" ", strip=True)
 
-    structured = extract_structured_contacts(html)
+    structured = extract_structured_contacts(html, include_extended=True)
 
     _extend(contacts.emails, extract_emails(html), MAX_EMAILS, key=str.lower)
     _extend(
@@ -546,6 +649,18 @@ def _absorb(contacts: SiteContacts, html: str, url: str) -> None:
     _extend(contacts.phones, extract_phones(html, text), MAX_PHONES, key=phone_key)
     _extend(contacts.phones, structured["phones"], MAX_PHONES, key=phone_key)
 
+    _extend(contacts.mobile_phones, extract_mobile_phones(html, text), MAX_MOBILES, key=phone_key)
+
+    # Decision makers from HTML and structured data
+    dm_candidates = extract_decision_makers(html, text)
+    _extend_dms(contacts.decision_makers, dm_candidates, MAX_DECISION_MAKERS)
+    _extend_dms(
+        contacts.decision_makers, structured.get("decision_makers", []), MAX_DECISION_MAKERS
+    )
+
+    # Reviews from structured data
+    _extend(contacts.reviews, structured.get("reviews", []), MAX_REVIEWS, key=str.lower)
+
     for network, urls in extract_social_links(html).items():
         bucket = contacts.socials.setdefault(network, [])
         _extend(bucket, urls, MAX_SOCIALS_PER_NETWORK, key=str.lower)
@@ -554,6 +669,18 @@ def _absorb(contacts: SiteContacts, html: str, url: str) -> None:
         for network, urls in extract_social_links(" ".join(structured["socials"])).items():
             bucket = contacts.socials.setdefault(network, [])
             _extend(bucket, urls, MAX_SOCIALS_PER_NETWORK, key=str.lower)
+
+
+def _extend_dms(target: list[dict[str, str]], values: list[dict[str, str]], cap: int) -> None:
+    seen = {d.get("name", "").lower() for d in target if d.get("name")}
+    for dm in values:
+        if len(target) >= cap:
+            return
+        name = dm.get("name", "").strip()
+        if not name or name.lower() in seen:
+            continue
+        seen.add(name.lower())
+        target.append(dm)
 
 
 def _extend(target: list[str], values: list[str], cap: int, *, key) -> None:
@@ -580,15 +707,13 @@ def _finalize(contacts: SiteContacts, base_host: str) -> None:
     own = [email for email in contacts.emails if _email_matches_host(email, base_host)]
     others = [email for email in contacts.emails if email not in own]
     contacts.emails = own + others
-    contacts.socials = {
-        network: urls for network, urls in sorted(contacts.socials.items()) if urls
-    }
+    contacts.socials = {network: urls for network, urls in sorted(contacts.socials.items()) if urls}
 
 
 def _email_matches_host(email: str, base_host: str) -> bool:
     domain = email.rpartition("@")[2].lower().removeprefix("www.")
     if not domain:
         return False
-    return domain == base_host or domain.endswith(f".{base_host}") or base_host.endswith(
-        f".{domain}"
+    return (
+        domain == base_host or domain.endswith(f".{base_host}") or base_host.endswith(f".{domain}")
     )

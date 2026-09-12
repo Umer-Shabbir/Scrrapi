@@ -20,6 +20,7 @@ import { useQuery } from "@tanstack/react-query";
 import NeoButton from "../components/neo/NeoButton";
 import { api, ApiError, BASE_URL, getToken } from "../api/client";
 import { color, font } from "../theme/neobrutalist";
+import { SkeletonTable } from "../components/neo/Skeleton";
 import type {
   AuditActionTypesResponse,
   AuditActorsResponse,
@@ -119,21 +120,6 @@ function EventRow({ event, index }: { event: AuditEvent; index: number }) {
         </div>
       )}
     </>
-  );
-}
-
-function TableSkeleton() {
-  return (
-    <div style={{ maxWidth: 1020, border: `3px solid ${color.ink}` }}>
-      <div className="neo-skeleton" style={{ height: 36, borderBottom: `3px solid ${color.ink}` }} />
-      {Array.from({ length: 5 }, (_, i) => (
-        <div key={i} style={{ height: 40, borderBottom: i < 4 ? `3px solid ${color.rule}` : "none", display: "flex", alignItems: "center", gap: 16, padding: "0 12px" }}>
-          {[160, 190, 220, 220, 130, 80].map((w, j) => (
-            <div key={j} className="neo-skeleton" style={{ width: w - 20, height: 12 }} />
-          ))}
-        </div>
-      ))}
-    </div>
   );
 }
 
@@ -254,7 +240,7 @@ export default function AuditLog() {
         </div>
       </div>
 
-      {eventsQuery.isLoading && <TableSkeleton />}
+      {eventsQuery.isLoading && <div style={{ maxWidth: 1020 }}><SkeletonTable rows={5} columns={6} /></div>}
 
       {eventsQuery.isError && (
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16, padding: "48px 0" }}>
@@ -287,18 +273,57 @@ export default function AuditLog() {
       )}
 
       {eventsQuery.isSuccess && events.length > 0 && (
-        <div style={{ background: color.white, border: `3px solid ${color.ink}`, maxWidth: 1020, overflowX: "auto" }}>
-          <div style={{ display: "flex", background: color.sand, borderBottom: `3px solid ${color.ink}`, height: 36 }}>
-            {[["TIMESTAMP", 160], ["ACTOR", 190], ["ACTION", 220], ["TARGET", 220], ["IP", 130], ["RESULT", 100]].map(([h, w]) => (
-              <div key={h as string} style={{ display: "flex", alignItems: "center", padding: "0 12px", width: w as number, flexShrink: 0 }}>
-                <span style={{ fontFamily: font.body, fontWeight: 700, fontSize: 10.5, letterSpacing: "0.21px", color: color.ink }}>{h}</span>
+        <>
+          <div className="neo-responsive-table" style={{ background: color.white, border: `3px solid ${color.ink}`, maxWidth: 1020, overflowX: "auto" }}>
+            <div style={{ display: "flex", background: color.sand, borderBottom: `3px solid ${color.ink}`, height: 36 }}>
+              {[["TIMESTAMP", 160], ["ACTOR", 190], ["ACTION", 220], ["TARGET", 220], ["IP", 130], ["RESULT", 100]].map(([h, w]) => (
+                <div key={h as string} style={{ display: "flex", alignItems: "center", padding: "0 12px", width: w as number, flexShrink: 0 }}>
+                  <span style={{ fontFamily: font.body, fontWeight: 700, fontSize: 10.5, letterSpacing: "0.21px", color: color.ink }}>{h}</span>
+                </div>
+              ))}
+            </div>
+            {events.map((event, i) => (
+              <EventRow key={event.id} event={event} index={i} />
+            ))}
+          </div>
+
+          <div className="neo-responsive-cards">
+            {events.map((event, i) => (
+              <div
+                key={event.id}
+                className="neo-row-enter"
+                style={{
+                  border: `3px solid ${color.ink}`,
+                  background: color.white,
+                  padding: 12,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 8,
+                  ["--neo-delay" as string]: `${Math.min(i, 12) * 24}ms`,
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                  <div>
+                    <span style={{ fontFamily: font.body, fontWeight: 700, fontSize: 13, color: color.ink }}>{event.action}</span>
+                    <p style={{ margin: "2px 0 0", fontFamily: font.body, fontSize: 12, color: color.ink60 }}>
+                      by {event.actor ?? "—"}
+                    </p>
+                  </div>
+                  <ResultChip success={event.success} />
+                </div>
+                {event.target && (
+                  <p style={{ margin: 0, fontFamily: font.body, fontSize: 12, color: color.ink, wordBreak: "break-all" }}>
+                    Target: {event.target}
+                  </p>
+                )}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: `1px solid ${color.rule}`, paddingTop: 6, fontFamily: font.mono, fontSize: 11, color: color.ink60 }}>
+                  <span>{event.timestamp.slice(0, 19).replace("T", " ")}</span>
+                  <span>{event.ip ?? "—"}</span>
+                </div>
               </div>
             ))}
           </div>
-          {events.map((event, i) => (
-            <EventRow key={event.id} event={event} index={i} />
-          ))}
-        </div>
+        </>
       )}
     </div>
   );

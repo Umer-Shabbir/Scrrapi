@@ -96,7 +96,9 @@ def test_record_outcome_auto_cools_after_consecutive_blocks(db, add_proxy) -> No
     blocks: dict[str, int] = {}
 
     for _ in range(CONSECUTIVE_BLOCKS_BEFORE_COOLING):
-        record_proxy_outcome(db, "1.1.1.1", 8080, "blocked", latency_ms=10, consecutive_blocks=blocks)
+        record_proxy_outcome(
+            db, "1.1.1.1", 8080, "blocked", latency_ms=10, consecutive_blocks=blocks
+        )
 
     assert select_active_proxy(db, 0) is None  # no longer active -- cooling
 
@@ -106,7 +108,9 @@ def test_record_outcome_below_threshold_stays_active(db, add_proxy) -> None:
     blocks: dict[str, int] = {}
 
     for _ in range(CONSECUTIVE_BLOCKS_BEFORE_COOLING - 1):
-        record_proxy_outcome(db, "1.1.1.1", 8080, "blocked", latency_ms=10, consecutive_blocks=blocks)
+        record_proxy_outcome(
+            db, "1.1.1.1", 8080, "blocked", latency_ms=10, consecutive_blocks=blocks
+        )
 
     assert select_active_proxy(db, 0) is not None
 

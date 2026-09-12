@@ -40,9 +40,7 @@ WHATSAPP_RE = re.compile(
 # the middle of it and passed off as a phone number. The optional opening
 # parenthesis matters: without it "(512) 555-0100" is captured from the digit
 # onwards and stored as the visibly broken "512) 555-0100".
-PHONE_TEXT_RE = re.compile(
-    r"(?<![\w@.])(\+?\(?\d[\d\s().\-–—/]{5,22}\d)(?![\w])"
-)
+PHONE_TEXT_RE = re.compile(r"(?<![\w@.])(\+?\(?\d[\d\s().\-–—/]{5,22}\d)(?![\w])")
 
 # What a phone number can be once the punctuation is gone. Below 7 digits it is
 # an extension or a price; above 15 it is longer than E.164 allows, so it is an

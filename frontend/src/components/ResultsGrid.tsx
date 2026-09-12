@@ -16,6 +16,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import NeoButton from "./neo/NeoButton";
+import NeoCheckbox from "./neo/NeoCheckbox";
+import { SkeletonTable } from "./neo/Skeleton";
 import { color, font } from "../theme/neobrutalist";
 import type { Result } from "../types";
 
@@ -152,6 +154,46 @@ const BASE_COLUMNS: Column[] = [
 // default and revealed once real data shows up in any of them (see the
 // `revealed` effect below) or via the column picker.
 const OPTIONAL_COLUMNS: Column[] = [
+  { field: "decisionMaker", header: "Decision Maker", width: 180 },
+  {
+    field: "mobilePhone",
+    header: "Mobile Phone",
+    width: 160,
+    render: (r) => cellValues(r.mobilePhone, (v) => `tel:${v.replace(/[^\d+]/g, "")}`),
+  },
+  { field: "reviewsCount", header: "Reviews", width: 90 },
+  {
+    field: "sentimentLabel",
+    header: "Sentiment",
+    width: 120,
+    render: (r) => {
+      if (!r.sentimentLabel) return cellText(r.sentimentLabel);
+      const bg =
+        r.sentimentLabel === "Positive"
+          ? color.green
+          : r.sentimentLabel === "Negative"
+          ? color.pink
+          : r.sentimentLabel === "Mixed"
+          ? color.yellow
+          : color.sand;
+      return (
+        <span
+          style={{
+            display: "inline-block",
+            padding: "2px 6px",
+            background: bg,
+            border: `1px solid ${color.ink}`,
+            fontSize: 10,
+            fontWeight: 700,
+            textTransform: "uppercase",
+          }}
+        >
+          {r.sentimentLabel}
+        </span>
+      );
+    },
+  },
+  { field: "painPoints", header: "Pain Points", width: 220 },
   { field: "country", header: "Country", width: 110 },
   { field: "facebook", header: "Facebook", width: 150, render: (r) => cellProfile(r.facebook) },
   { field: "instagram", header: "Instagram", width: 150, render: (r) => cellProfile(r.instagram) },
@@ -213,8 +255,7 @@ function ColumnPicker({
                 key={col.field}
                 style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: font.body, fontSize: 12, color: color.ink, cursor: "pointer" }}
               >
-                <input
-                  type="checkbox"
+                <NeoCheckbox
                   checked={visible.has(col.field)}
                   onChange={() => onToggle(col.field)}
                 />
@@ -277,74 +318,176 @@ export default function ResultsGrid({
         />
       </div>
 
-      <div style={{ overflowX: "auto", maxHeight: 560, overflowY: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 900 }}>
-          <thead style={{ position: "sticky", top: 0, zIndex: 1 }}>
-            <tr style={{ background: color.sand }}>
-              {columns.map((col) => (
-                <th
-                  key={col.field}
-                  style={{
-                    textAlign: "left",
-                    padding: "10px 12px",
-                    fontFamily: font.body,
-                    fontWeight: 700,
-                    fontSize: "10.5px",
-                    letterSpacing: "0.35px",
-                    textTransform: "uppercase",
-                    color: color.ink,
-                    minWidth: col.width,
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {col.header}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {loading &&
-              Array.from({ length: 6 }).map((_, i) => (
-                <tr key={`skeleton-${i}`} style={{ borderTop: `1px solid ${color.rule}` }}>
-                  {columns.map((col) => (
-                    <td key={col.field} style={{ padding: "12px" }}>
-                      <div className="neo-skeleton" style={{ height: 14, width: "80%" }} />
-                    </td>
-                  ))}
-                </tr>
-              ))}
-
-            {!loading && results.length === 0 && (
-              <tr>
-                <td colSpan={columns.length} style={{ padding: "32px 16px", textAlign: "center", fontFamily: font.body, fontSize: 13, color: color.ink60 }}>
-                  No leads yet.
-                </td>
+      {loading && results.length === 0 ? (
+        <SkeletonTable rows={10} columns={columns.length} />
+      ) : (
+      <>
+        <div className="neo-responsive-table" style={{ overflowX: "auto", maxHeight: 560, overflowY: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 900 }}>
+            <thead style={{ position: "sticky", top: 0, zIndex: 1 }}>
+              <tr style={{ background: color.sand }}>
+                {columns.map((col) => (
+                  <th
+                    key={col.field}
+                    style={{
+                      textAlign: "left",
+                      padding: "10px 12px",
+                      fontFamily: font.body,
+                      fontWeight: 700,
+                      fontSize: "10.5px",
+                      letterSpacing: "0.35px",
+                      textTransform: "uppercase",
+                      color: color.ink,
+                      minWidth: col.width,
+                      whiteSpace: "nowrap",
+                      ...(col.field === "name" ? {
+                        position: "sticky",
+                        left: 0,
+                        background: color.sand,
+                        borderRight: `2px solid ${color.ink}`,
+                        zIndex: 2,
+                      } : {})
+                    }}
+                  >
+                    {col.header}
+                  </th>
+                ))}
               </tr>
-            )}
-
-            {!loading &&
-              results.map((result, i) => (
-                <tr
-                  key={result.id}
-                  className="neo-row-enter"
-                  onClick={onRowClick ? () => onRowClick(result) : undefined}
-                  style={{
-                    borderTop: `1px solid ${color.rule}`,
-                    cursor: onRowClick ? "pointer" : undefined,
-                    ["--neo-delay" as string]: `${Math.min(i, 12) * 24}ms`,
-                  }}
-                >
-                  {columns.map((col) => (
-                    <td key={col.field} style={{ padding: "10px 12px", fontFamily: col.field === "zipCode" || col.field === "latitude" || col.field === "longitude" ? font.mono : font.body, fontSize: 12.5, color: color.ink, maxWidth: col.width, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {col.render ? col.render(result) : cellText(result[col.field] as string | number | null)}
-                    </td>
-                  ))}
+            </thead>
+            <tbody>
+              {!loading && results.length === 0 && (
+                <tr>
+                  <td colSpan={columns.length} style={{ padding: "32px 16px", textAlign: "center", fontFamily: font.body, fontSize: 13, color: color.ink60 }}>
+                    No leads yet.
+                  </td>
                 </tr>
-              ))}
-          </tbody>
-        </table>
-      </div>
+              )}
 
+              {!loading &&
+                results.map((result, i) => (
+                  <tr
+                    key={result.id}
+                    className="neo-row-enter"
+                    onClick={onRowClick ? () => onRowClick(result) : undefined}
+                    style={{
+                      borderTop: `1px solid ${color.rule}`,
+                      cursor: onRowClick ? "pointer" : undefined,
+                      ["--neo-delay" as string]: `${Math.min(i, 12) * 24}ms`,
+                    }}
+                  >
+                    {columns.map((col) => (
+                      <td
+                        key={col.field}
+                        style={{
+                          padding: "10px 12px",
+                          fontFamily: col.field === "zipCode" || col.field === "latitude" || col.field === "longitude" ? font.mono : font.body,
+                          fontSize: 12.5,
+                          color: color.ink,
+                          maxWidth: col.width,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                          ...(col.field === "name" ? {
+                            position: "sticky",
+                            left: 0,
+                            backgroundColor: color.white,
+                            borderRight: `2px solid ${color.ink}`,
+                            zIndex: 1,
+                          } : {})
+                        }}
+                      >
+                        {col.render ? col.render(result) : cellText(result[col.field] as string | number | null)}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="neo-responsive-cards" style={{ padding: 12 }}>
+          {!loading && results.length === 0 && (
+            <p style={{ margin: 0, padding: "24px 0", textAlign: "center", fontFamily: font.body, fontSize: 13, color: color.ink60 }}>
+              No leads yet.
+            </p>
+          )}
+          {!loading &&
+            results.map((result, i) => (
+              <div
+                key={result.id}
+                className="neo-row-enter"
+                onClick={onRowClick ? () => onRowClick(result) : undefined}
+                style={{
+                  border: `3px solid ${color.ink}`,
+                  background: color.white,
+                  padding: 12,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 8,
+                  cursor: onRowClick ? "pointer" : undefined,
+                  ["--neo-delay" as string]: `${Math.min(i, 12) * 24}ms`,
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                  <div>
+                    <span style={{ fontFamily: font.body, fontWeight: 700, fontSize: 14, color: color.ink }}>
+                      {result.name || "—"}
+                    </span>
+                    {result.category && (
+                      <p style={{ margin: "2px 0 0", fontFamily: font.body, fontSize: 12, color: color.ink60 }}>
+                        {result.category}
+                      </p>
+                    )}
+                  </div>
+                  {result.city && (
+                    <span
+                      style={{
+                        padding: "2px 6px",
+                        border: `2px solid ${color.ink}`,
+                        background: color.sand,
+                        fontFamily: font.body,
+                        fontWeight: 700,
+                        fontSize: 10,
+                        color: color.ink,
+                      }}
+                    >
+                      {result.city}
+                      {result.state ? `, ${result.state}` : ""}
+                    </span>
+                  )}
+                </div>
+
+                {result.address && (
+                  <p style={{ margin: 0, fontFamily: font.body, fontSize: 12, color: color.ink }}>
+                    {result.address}
+                  </p>
+                )}
+
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 12, borderTop: `1px solid ${color.rule}`, paddingTop: 8 }}>
+                  {result.phone && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                      <span style={{ fontFamily: font.body, fontWeight: 700, fontSize: 11, color: color.ink60 }}>TEL:</span>
+                      {cellValues(result.phone, (v) => `tel:${v.replace(/[^\d+]/g, "")}`)}
+                    </div>
+                  )}
+                  {result.email && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                      <span style={{ fontFamily: font.body, fontWeight: 700, fontSize: 11, color: color.ink60 }}>EMAIL:</span>
+                      {cellValues(result.email, (v) => `mailto:${v}`)}
+                    </div>
+                  )}
+                  {result.website && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                      <span style={{ fontFamily: font.body, fontWeight: 700, fontSize: 11, color: color.ink60 }}>WEB:</span>
+                      {cellLink(result.website, (v) => (/^https?:\/\//i.test(v) ? v : `https://${v}`))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+        </div>
+      </>
+      )}
       {(onPageChange || onPageSizeChange) && (
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 16px", borderTop: `2px solid ${color.rule}`, flexWrap: "wrap", gap: 12 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>

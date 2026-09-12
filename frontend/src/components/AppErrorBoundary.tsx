@@ -73,7 +73,7 @@ export default class AppErrorBoundary extends Component<{ children: ReactNode },
             SOMETHING IN THE APP CRASHED
           </h1>
           <p style={{ margin: 0, fontFamily: font.body, fontWeight: 500, fontSize: 13, color: color.ink60, textAlign: "center", maxWidth: 460 }}>
-            The app hit an error it couldn't recover from. Reloading usually fixes it — if it
+            The app hit an error it couldn&apos;t recover from. Reloading usually fixes it — if it
             keeps happening, quote the error id below in a bug report.
           </p>
           <div style={{ background: color.sand, border: `2px solid ${color.ink}`, padding: "8px 12px" }}>

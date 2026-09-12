@@ -14,11 +14,22 @@ from app.db.base import AppBase
 COLUMN_GROUPS: dict[str, tuple[str, ...]] = {
     "identity": ("category", "name", "rating"),
     "contact": (
-        "phone", "email", "website",
-        "facebook", "instagram", "linkedin", "twitter", "youtube", "tiktok",
-        "whatsapp", "other_socials",
+        "phone",
+        "mobile_phone",
+        "email",
+        "website",
+        "decision_maker",
+        "facebook",
+        "instagram",
+        "linkedin",
+        "twitter",
+        "youtube",
+        "tiktok",
+        "whatsapp",
+        "other_socials",
     ),
     "location": ("address", "city", "state", "country", "zip_code", "latitude", "longitude"),
+    "sentiment": ("sentiment_score", "sentiment_label", "pain_points", "reviews_count"),
     # Not a Result column -- computed via app.scraping.common.lead_score and
     # appended as two extra fields (score, score_reasons) by the writers.
     "scoring": (),

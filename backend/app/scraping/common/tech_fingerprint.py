@@ -33,7 +33,13 @@ _SIGNATURES: list[tuple[str, re.Pattern[str]]] = [
     ("Wix", re.compile(r"static\.wixstatic\.com|wix\.com", re.IGNORECASE)),
     ("Squarespace", re.compile(r"squarespace\.com|static1\.squarespace", re.IGNORECASE)),
     ("Webflow", re.compile(r"webflow\.com|data-wf-site", re.IGNORECASE)),
-    ("Google Analytics", re.compile(r"googletagmanager\.com/gtag/js|google-analytics\.com/analytics\.js|gtag\(", re.IGNORECASE)),
+    (
+        "Google Analytics",
+        re.compile(
+            r"googletagmanager\.com/gtag/js|google-analytics\.com/analytics\.js|gtag\(",
+            re.IGNORECASE,
+        ),
+    ),
     ("HubSpot", re.compile(r"js\.hs-scripts\.com|hs-analytics\.net|hsforms\.com", re.IGNORECASE)),
     ("Mailchimp", re.compile(r"chimpstatic\.com|list-manage\.com", re.IGNORECASE)),
     ("Intercom", re.compile(r"widget\.intercom\.io", re.IGNORECASE)),

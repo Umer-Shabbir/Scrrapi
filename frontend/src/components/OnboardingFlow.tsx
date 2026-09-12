@@ -105,7 +105,7 @@ function ComplianceModal({ pane, onNext, pending }: { pane: number; onNext: () =
       </div>
       <div style={{ position: "fixed", inset: 0, background: "rgba(17,17,17,0.7)", zIndex: 1000, display: "grid", placeItems: "center" }}>
         <div style={{ background: color.white, border: `3px solid ${color.ink}`, boxShadow: shadow.md, width: 640 }}>
-          <div style={{ background: color.ink, padding: "16px 20px" }}>
+          <div style={{ borderBottom: `3px solid ${color.ink}`, background: color.ink, padding: "16px 20px" }}>
             <span style={{ fontFamily: font.body, fontWeight: 700, fontSize: 15, letterSpacing: "0.15px", color: color.white }}>
               BEFORE YOU START
             </span>

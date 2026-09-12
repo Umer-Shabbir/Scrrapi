@@ -51,11 +51,15 @@ def list_templates(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_app_db),
 ) -> list[dict]:
-    rows = db.execute(
-        select(JobTemplate)
-        .where(JobTemplate.owner_id == user.id)
-        .order_by(JobTemplate.created_at.desc())
-    ).scalars().all()
+    rows = (
+        db.execute(
+            select(JobTemplate)
+            .where(JobTemplate.owner_id == user.id)
+            .order_by(JobTemplate.created_at.desc())
+        )
+        .scalars()
+        .all()
+    )
     return [_template_dict(t) for t in rows]
 
 

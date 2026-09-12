@@ -34,9 +34,11 @@ from app.core.config import get_settings
 
 # Fields every LogRecord carries by default. Anything *not* in here was passed by
 # a caller as `logger.info(..., extra={...})`, so it belongs in the JSON output.
-_RESERVED_RECORD_FIELDS = frozenset(
-    logging.LogRecord("", 0, "", 0, "", None, None).__dict__
-) | {"message", "asctime", "taskName"}
+_RESERVED_RECORD_FIELDS = frozenset(logging.LogRecord("", 0, "", 0, "", None, None).__dict__) | {
+    "message",
+    "asctime",
+    "taskName",
+}
 
 CONTEXT_FIELDS = ("job_id", "target_id", "place_url", "source", "keyword", "location")
 

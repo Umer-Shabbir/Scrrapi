@@ -78,12 +78,16 @@ def _consecutive_failures(db: Session, connection_id) -> int:
     """How many of the most recent deliveries, read newest-first, failed in a
     row. Stops counting at the first success -- a back-off/disable streak is
     about what's happening *now*, not a lifetime failure count."""
-    recent = db.execute(
-        select(WebhookDelivery.succeeded)
-        .where(WebhookDelivery.connection_id == connection_id)
-        .order_by(WebhookDelivery.created_at.desc())
-        .limit(DISABLE_THRESHOLD + 1)
-    ).scalars().all()
+    recent = (
+        db.execute(
+            select(WebhookDelivery.succeeded)
+            .where(WebhookDelivery.connection_id == connection_id)
+            .order_by(WebhookDelivery.created_at.desc())
+            .limit(DISABLE_THRESHOLD + 1)
+        )
+        .scalars()
+        .all()
+    )
     count = 0
     for succeeded in recent:
         if succeeded:
@@ -143,16 +147,18 @@ def get_delivery_log(
     db: Session = Depends(get_app_db),
 ) -> dict:
     conn = _get_connection(db, connection_id)
-    deliveries = db.execute(
-        select(WebhookDelivery)
-        .where(WebhookDelivery.connection_id == conn.id)
-        .order_by(WebhookDelivery.created_at.desc())
-    ).scalars().all()
+    deliveries = (
+        db.execute(
+            select(WebhookDelivery)
+            .where(WebhookDelivery.connection_id == conn.id)
+            .order_by(WebhookDelivery.created_at.desc())
+        )
+        .scalars()
+        .all()
+    )
 
     since = datetime.utcnow() - RECENT_WINDOW
-    failed_recent = sum(
-        1 for d in deliveries if not d.succeeded and d.created_at >= since
-    )
+    failed_recent = sum(1 for d in deliveries if not d.succeeded and d.created_at >= since)
 
     config = conn.config or {}
     return {
@@ -288,16 +294,20 @@ def replay_all_failed(
         )
 
     since = datetime.utcnow() - RECENT_WINDOW
-    failed = db.execute(
-        select(WebhookDelivery)
-        .where(
-            WebhookDelivery.connection_id == conn.id,
-            WebhookDelivery.succeeded.is_(False),
-            WebhookDelivery.created_at >= since,
+    failed = (
+        db.execute(
+            select(WebhookDelivery)
+            .where(
+                WebhookDelivery.connection_id == conn.id,
+                WebhookDelivery.succeeded.is_(False),
+                WebhookDelivery.created_at >= since,
+            )
+            .order_by(WebhookDelivery.created_at.desc())
+            .limit(REPLAY_ALL_LIMIT)
         )
-        .order_by(WebhookDelivery.created_at.desc())
-        .limit(REPLAY_ALL_LIMIT)
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
 
     retried = [_replay_one(db, conn, d) for d in failed]
     return {

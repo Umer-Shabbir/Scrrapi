@@ -61,9 +61,15 @@ def list_schedules(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_app_db),
 ) -> list[dict]:
-    rows = db.execute(
-        select(Schedule).where(Schedule.owner_id == user.id).order_by(Schedule.created_at.desc())
-    ).scalars().all()
+    rows = (
+        db.execute(
+            select(Schedule)
+            .where(Schedule.owner_id == user.id)
+            .order_by(Schedule.created_at.desc())
+        )
+        .scalars()
+        .all()
+    )
     return [_schedule_dict(s) for s in rows]
 
 
@@ -90,12 +96,16 @@ def list_schedule_runs(
     rather than a number that looks precise but isn't backed by anything.
     """
     schedule = _get_owned_schedule(db, schedule_id, user)
-    jobs = db.execute(
-        select(Job)
-        .where(Job.schedule_id == schedule.id)
-        .order_by(Job.created_at.desc())
-        .limit(limit)
-    ).scalars().all()
+    jobs = (
+        db.execute(
+            select(Job)
+            .where(Job.schedule_id == schedule.id)
+            .order_by(Job.created_at.desc())
+            .limit(limit)
+        )
+        .scalars()
+        .all()
+    )
     return [_run_dict(db, job) for job in jobs]
 
 

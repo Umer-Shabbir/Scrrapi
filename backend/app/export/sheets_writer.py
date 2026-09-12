@@ -37,7 +37,9 @@ class SheetsNotConfigured(RuntimeError):
     account to push it with."""
 
 
-def write_sheets(results: list[Result], output_path: str, *, columns: list[str] | None = None) -> str:
+def write_sheets(
+    results: list[Result], output_path: str, *, columns: list[str] | None = None
+) -> str:
     """Signature matches every other writer in `_EXPORT_WRITERS`
     (results, output_path, columns=...) so `export_job` doesn't need a
     format-specific branch -- `output_path` is unused here (nothing local is
@@ -72,7 +74,10 @@ def write_sheets(results: list[Result], output_path: str, *, columns: list[str] 
 
     spreadsheet = (
         sheets.spreadsheets()
-        .create(body={"properties": {"title": "Leadgen export"}}, fields="spreadsheetId,spreadsheetUrl")
+        .create(
+            body={"properties": {"title": "Leadgen export"}},
+            fields="spreadsheetId,spreadsheetUrl",
+        )
         .execute()
     )
     spreadsheet_id = spreadsheet["spreadsheetId"]

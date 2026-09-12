@@ -23,32 +23,33 @@ different reason silently shadowing the first.
 
 Run against the app DB only: `alembic -x target=app upgrade app@head`.
 """
+
 import sqlalchemy as sa
 from alembic import op
 
-revision = 'd5b8f3a072e9'
-down_revision = 'c2a7e5f91d36'
+revision = "d5b8f3a072e9"
+down_revision = "c2a7e5f91d36"
 branch_labels = None
 depends_on = None
 
 
 def upgrade() -> None:
     op.create_table(
-        'suppression_entries',
-        sa.Column('id', sa.Uuid(), primary_key=True),
-        sa.Column('kind', sa.String(length=10), nullable=False),  # domain | email | place
-        sa.Column('value', sa.String(length=255), nullable=False),
-        sa.Column('reason', sa.String(length=500), nullable=True),
-        sa.Column('created_by', sa.Uuid(), sa.ForeignKey('users.id'), nullable=False),
-        sa.Column('created_at', sa.DateTime(), nullable=False),
+        "suppression_entries",
+        sa.Column("id", sa.Uuid(), primary_key=True),
+        sa.Column("kind", sa.String(length=10), nullable=False),  # domain | email | place
+        sa.Column("value", sa.String(length=255), nullable=False),
+        sa.Column("reason", sa.String(length=500), nullable=True),
+        sa.Column("created_by", sa.Uuid(), sa.ForeignKey("users.id"), nullable=False),
+        sa.Column("created_at", sa.DateTime(), nullable=False),
     )
-    op.create_index(op.f('ix_suppression_entries_kind'), 'suppression_entries', ['kind'])
+    op.create_index(op.f("ix_suppression_entries_kind"), "suppression_entries", ["kind"])
     op.create_unique_constraint(
-        'uq_suppression_entries_kind_value', 'suppression_entries', ['kind', 'value']
+        "uq_suppression_entries_kind_value", "suppression_entries", ["kind", "value"]
     )
 
 
 def downgrade() -> None:
-    op.drop_constraint('uq_suppression_entries_kind_value', 'suppression_entries', type_='unique')
-    op.drop_index(op.f('ix_suppression_entries_kind'), table_name='suppression_entries')
-    op.drop_table('suppression_entries')
+    op.drop_constraint("uq_suppression_entries_kind_value", "suppression_entries", type_="unique")
+    op.drop_index(op.f("ix_suppression_entries_kind"), table_name="suppression_entries")
+    op.drop_table("suppression_entries")

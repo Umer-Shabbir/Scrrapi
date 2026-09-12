@@ -30,8 +30,8 @@ const STATUS_FILL: Record<string, string> = {
 const STATUS_GLYPH: Record<string, string> = {
   active: "✓",
   cooling: "!",
-  disabled: "•",
-  retired: "•",
+  disabled: "✕",
+  retired: "✕",
 };
 const STATUS_LABEL: Record<string, string> = {
   active: "healthy",
@@ -121,7 +121,7 @@ function StatusChip({ status: proxyStatus }: { status: string }) {
         opacity: proxyStatus === "disabled" || proxyStatus === "retired" ? 0.6 : 1,
       }}
     >
-      {STATUS_GLYPH[proxyStatus] ?? "•"} {STATUS_LABEL[proxyStatus] ?? proxyStatus}
+      {STATUS_GLYPH[proxyStatus] ?? "●"} {STATUS_LABEL[proxyStatus] ?? proxyStatus}
     </span>
   );
 }
@@ -343,14 +343,14 @@ export default function Proxies() {
 
       {stats && (
         <div className="neo-responsive-stats" style={{ display: "flex", gap: 16, marginBottom: 24, flexWrap: "wrap" }}>
-          <StatTile label="Healthy" value={String(stats.healthy)} fill={stats.healthy > 0 ? color.green : color.white} />
-          <StatTile label="Cooling" value={String(stats.cooling)} fill={stats.cooling > 0 ? color.yellow : color.white} />
-          <StatTile label="Retired" value={String(stats.retired)} />
-          <StatTile label="Avg latency" value={stats.avgLatencyMs != null ? `${stats.avgLatencyMs}ms` : "—"} />
+          <StatTile label="Healthy" value={String(stats.healthy)} fill={color.green} />
+          <StatTile label="Cooling" value={String(stats.cooling)} fill={color.yellow} />
+          <StatTile label="Retired" value={String(stats.retired)} fill={color.sand} />
+          <StatTile label="Avg latency" value={stats.avgLatencyMs != null ? `${stats.avgLatencyMs}ms` : "—"} fill={color.purple} />
           <StatTile
             label="Block rate"
             value={stats.blockRatePct != null ? `${stats.blockRatePct}%` : "—"}
-            fill={stats.blockRatePct != null && stats.blockRatePct > 0 ? color.yellow : color.white}
+            fill={color.pink}
           />
         </div>
       )}
@@ -394,18 +394,77 @@ export default function Proxies() {
       )}
 
       {listQuery.data && proxies.length > 0 && (
-        <div style={{ border: `3px solid ${color.ink}`, background: color.white, width: "100%", maxWidth: 1300, overflowX: "auto" }}>
-          <div style={{ display: "flex", background: color.sand, borderBottom: `3px solid ${color.ink}` }}>
-            {PROXY_TABLE_COLUMNS.map((col) => (
-              <div key={col.label} style={{ padding: "0 12px", height: 36, display: "flex", alignItems: "center", minWidth: col.width, flex: col.flex ? 1 : undefined }}>
-                <span style={{ fontFamily: font.body, fontWeight: 700, fontSize: 10.5, letterSpacing: "0.315px", color: color.ink }}>{col.label}</span>
+        <>
+          <div className="neo-responsive-table" style={{ border: `3px solid ${color.ink}`, background: color.white, width: "100%", maxWidth: 1300, overflowX: "auto" }}>
+            <div style={{ display: "flex", background: color.sand, borderBottom: `3px solid ${color.ink}` }}>
+              {PROXY_TABLE_COLUMNS.map((col) => (
+                <div key={col.label} style={{ padding: "0 12px", height: 36, display: "flex", alignItems: "center", minWidth: col.width, flex: col.flex ? 1 : undefined }}>
+                  <span style={{ fontFamily: font.body, fontWeight: 700, fontSize: 10.5, letterSpacing: "0.315px", color: color.ink }}>{col.label}</span>
+                </div>
+              ))}
+            </div>
+            {proxies.map((proxy, i) => (
+              <ProxyRow key={proxy.id} proxy={proxy} onChanged={refresh} rowIndex={i} />
+            ))}
+          </div>
+
+          <div className="neo-responsive-cards">
+            {proxies.map((proxy, i) => (
+              <div
+                key={proxy.id}
+                className="neo-row-enter"
+                style={{
+                  border: `3px solid ${color.ink}`,
+                  background: color.white,
+                  padding: 12,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 8,
+                  ["--neo-delay" as string]: `${Math.min(i, 12) * 24}ms`,
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                  <div>
+                    <span style={{ fontFamily: font.mono, fontWeight: 700, fontSize: 13, color: color.ink }}>
+                      {proxy.host}:{proxy.port}
+                    </span>
+                    <p style={{ margin: "2px 0 0", fontFamily: font.body, fontSize: 11, color: color.ink60 }}>
+                      {proxy.protocol.toUpperCase()}{proxy.country ? ` · ${proxy.country}` : ""}
+                    </p>
+                  </div>
+                  <StatusChip status={proxy.status} />
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontFamily: font.mono, fontSize: 12, color: color.ink }}>
+                  <span>Latency: {proxy.avgLatencyMs != null ? `${proxy.avgLatencyMs}ms` : "—"}</span>
+                  <span>Success: {proxy.successRate != null ? `${proxy.successRate}%` : "—"}</span>
+                  <span>Blocks: {proxy.blockCount}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: `1px solid ${color.rule}`, paddingTop: 6 }}>
+                  <span style={{ fontFamily: font.body, fontSize: 11, color: color.ink60 }}>
+                    Last used: {proxy.lastUsedAt ? new Date(proxy.lastUsedAt).toLocaleDateString() : "never"}
+                  </span>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <button
+                      type="button"
+                      onClick={() => api.post(`/api/proxies/${proxy.id}/test`).then(refresh)}
+                      style={{ border: "none", background: "transparent", cursor: "pointer", padding: 0, fontFamily: font.body, fontWeight: 700, fontSize: 11.5, color: color.blue }}
+                    >
+                      TEST
+                    </button>
+                    <span style={{ color: color.ink60 }}>·</span>
+                    <button
+                      type="button"
+                      onClick={() => api.del(`/api/proxies/${proxy.id}`).then(refresh)}
+                      style={{ border: "none", background: "transparent", cursor: "pointer", padding: 0, fontFamily: font.body, fontWeight: 700, fontSize: 11.5, color: color.pink }}
+                    >
+                      DELETE
+                    </button>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
-          {proxies.map((proxy, i) => (
-            <ProxyRow key={proxy.id} proxy={proxy} onChanged={refresh} rowIndex={i} />
-          ))}
-        </div>
+        </>
       )}
     </div>
   );

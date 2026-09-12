@@ -1,0 +1,91 @@
+--- G:/Scrrapi/frontend/src/pages/Export.tsx
++++ G:/Scrrapi/frontend/src/pages/Export.tsx
+@@ -29,6 +29,7 @@
+ import NeoButton from "../components/neo/NeoButton";
+ import NeoRadio from "../components/neo/NeoRadio";
+ import NeoCheckbox from "../components/neo/NeoCheckbox";
++import { SkeletonCard } from "../components/neo/Skeleton";
+ import { api, ApiError } from "../api/client";
+ import { color, font } from "../theme/neobrutalist";
+ import type { ExportFormat, ExportRecord, JobDetail } from "../types";
+@@ -304,18 +305,37 @@
+   const running = job && LIVE_STATUSES.has(job.status);
+   const generating = createExport.isPending || (activeExportQuery.data && !TERMINAL_EXPORT_STATUSES.has(activeExportQuery.data.status));
+ 
++  // Cross-cutting #10: Keep the header and navigation visible during loading
++  // and error states, scoping the skeleton/error to the content area below it.
++  const header = (
++    <div>
++      <button
++        type="button"
++        onClick={() => navigate(`/results/${jobId}`)}
++        style={{ border: "none", background: "transparent", cursor: "pointer", padding: 0, fontFamily: font.body, fontWeight: 500, fontSize: 12, color: color.ink60, marginBottom: 8 }}
++      >
++        ← Results
++      </button>
++      <div className="neo-responsive-header" style={{ marginBottom: 24 }}>
++        <h1 style={{ margin: 0, fontFamily: font.head, fontSize: 24, color: color.ink }}>EXPORT</h1>
++        <p style={{ margin: "4px 0 0", fontFamily: font.body, fontWeight: 500, fontSize: 13, color: color.ink60 }}>
++          {job?.name ?? (jobId ? `Job #${jobId.slice(0, 8)}` : "—")}
++        </p>
++      </div>
++    </div>
++  );
++
+   if (jobQuery.isLoading) {
+     return (
+-      <div>
+-        <div className="neo-skeleton" style={{ height: 24, width: 320, marginBottom: 8 }} />
+-        <div className="neo-skeleton" style={{ height: 14, width: 220, marginBottom: 32 }} />
+-        <div className="neo-skeleton" style={{ height: 108, marginBottom: 24 }} />
+-        <div style={{ display: "flex", gap: 16 }}>
+-          <div className="neo-skeleton" style={{ height: 200, flex: 1 }} />
+-          <div className="neo-skeleton" style={{ height: 200, flex: 1 }} />
++      <div style={{ maxWidth: 1126 }}>
++        {header}
++        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 24 }}>
++          <div style={{ width: 198 }}><SkeletonCard height={118} /></div>
++          <div style={{ width: 198 }}><SkeletonCard height={118} /></div>
++          <div style={{ width: 198 }}><SkeletonCard height={118} /></div>
+         </div>
++        <div className="neo-responsive-row" style={{ display: "flex", gap: 16, marginBottom: 24, flexWrap: "wrap" }}>
++          <div style={{ flex: 1, minWidth: 400 }}><SkeletonCard height={320} /></div>
++          <div style={{ flex: 1, minWidth: 400 }}><SkeletonCard height={200} /></div>
++        </div>
+       </div>
+     );
+   }
+ 
+   if (jobQuery.isError || !job) {
+-    // Cross-cutting #10: this used to discard the whole page shell for a
+-    // centered message -- keep the header (and the way back to Results)
+-    // visible, same as the loaded state does, and scope the failure to the
+-    // content area under it.
+     return (
+-      <div>
+-        <div style={{ marginBottom: 24 }}>
+-          <button
+-            type="button"
+-            onClick={() => navigate(`/results/${jobId}`)}
+-            style={{ border: "none", background: "transparent", cursor: "pointer", padding: 0, fontFamily: font.body, fontWeight: 500, fontSize: 12, color: color.ink60, marginBottom: 8 }}
+-          >
+-            ← Results
+-          </button>
+-          <h1 style={{ margin: 0, fontFamily: font.head, fontSize: 24, color: color.ink }}>EXPORT</h1>
+-        </div>
++      <div style={{ maxWidth: 1126 }}>
++        {header}
+         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: "80px 0" }}>
+@@ -356,11 +360,5 @@
+   return (
+-    <div>
+-      <div className="neo-responsive-header" style={{ marginBottom: 24 }}>
+-        <h1 style={{ margin: 0, fontFamily: font.head, fontSize: 24, color: color.ink }}>EXPORT</h1>
+-        <p style={{ margin: "4px 0 0", fontFamily: font.body, fontWeight: 500, fontSize: 13, color: color.ink60 }}>
+-          {job.name ?? `Job #${jobId?.slice(0, 8)}`}
+-        </p>
+-      </div>
++    <div style={{ maxWidth: 1126 }}>
++      {header}
+ 
+       {running && (

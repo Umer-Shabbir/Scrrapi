@@ -14,18 +14,19 @@ the legal record -- this column is the fast read path, not a replacement).
 
 Run against the app DB only: `alembic -x target=app upgrade app@head`.
 """
+
 import sqlalchemy as sa
 from alembic import op
 
-revision = '881f9cbe6b82'
-down_revision = 'b7e94a1c53d8'
+revision = "881f9cbe6b82"
+down_revision = "b7e94a1c53d8"
 branch_labels = None
 depends_on = None
 
 
 def upgrade() -> None:
-    op.add_column('users', sa.Column('compliance_ack_at', sa.DateTime(), nullable=True))
+    op.add_column("users", sa.Column("compliance_ack_at", sa.DateTime(), nullable=True))
 
 
 def downgrade() -> None:
-    op.drop_column('users', 'compliance_ack_at')
+    op.drop_column("users", "compliance_ack_at")

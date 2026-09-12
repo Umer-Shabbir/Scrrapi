@@ -3,7 +3,7 @@
 GET    /api/integrations                    -> 6 provider cards (state + last activity)
 GET    /api/integrations/webhooks           -> webhook config panel (SCREENLIST.md §14 drill-down)
 PUT    /api/integrations/webhooks           -> save endpoint URL + subscribed events
-POST   /api/integrations/webhooks/rotate    -> rotate the signing secret (shown once, in full, right after)
+POST   /api/integrations/webhooks/rotate    -> rotate signing secret (shown once in full after)
 POST   /api/integrations/webhooks/test      -> send a test event, records it as the "last delivery"
 
 Only "webhooks" has a real config flow -- see app.db.models.integration for
@@ -92,9 +92,11 @@ def list_integrations(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_app_db),
 ) -> list[dict]:
-    conns = db.execute(
-        select(IntegrationConnection).order_by(IntegrationConnection.provider)
-    ).scalars().all()
+    conns = (
+        db.execute(select(IntegrationConnection).order_by(IntegrationConnection.provider))
+        .scalars()
+        .all()
+    )
     return [_card_dict(c) for c in conns]
 
 

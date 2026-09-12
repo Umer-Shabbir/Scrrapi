@@ -16,6 +16,7 @@ import { api, ApiError } from "../api/client";
 import NeoButton from "../components/neo/NeoButton";
 import NeoStatusBadge from "../components/neo/NeoStatusBadge";
 import InlineWarning from "../components/neo/InlineWarning";
+import { SkeletonTable, SkeletonCard } from "../components/neo/Skeleton";
 import { color, font } from "../theme/neobrutalist";
 import type { JobTemplate, Schedule, ScheduleRun } from "../types";
 
@@ -76,9 +77,12 @@ export default function ScheduleDetail() {
 
   if (scheduleQuery.isLoading) {
     return (
-      <div>
+      <div style={{ maxWidth: 1126 }}>
         {backLink}
-        <div className="neo-skeleton" style={{ height: 200, border: `3px solid ${color.rule}` }} />
+        <div style={{ marginBottom: 24 }}>
+          <SkeletonCard height={80} />
+        </div>
+        <SkeletonTable rows={4} columns={7} />
       </div>
     );
   }
@@ -149,7 +153,7 @@ export default function ScheduleDetail() {
       <div style={{ background: color.white, border: `3px solid ${color.ink}`, boxShadow: "6px 6px 0px 0px #111", padding: 20 }}>
         <p style={{ margin: "0 0 16px", fontFamily: font.body, fontWeight: 500, fontSize: 14, color: color.ink }}>RUN HISTORY</p>
 
-        {runsQuery.isLoading && <div className="neo-skeleton" style={{ height: 150, border: `3px solid ${color.rule}` }} />}
+        {runsQuery.isLoading && <SkeletonTable rows={4} columns={7} />}
 
         {runsQuery.isError && (
           <InlineWarning tone="pink" fontSize={13} fontWeight={400}>
@@ -164,40 +168,77 @@ export default function ScheduleDetail() {
         )}
 
         {runsQuery.data && runsQuery.data.length > 0 && (
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 700 }}>
-              <thead>
-                <tr style={{ background: color.sand }}>
-                  {["STARTED", "DURATION", "TARGETS", "PLACES", "LEADS", "STATUS", ""].map((h) => (
-                    <th key={h} style={{ textAlign: "left", padding: "10px 12px", fontFamily: font.body, fontWeight: 500, fontSize: 11, color: color.ink60 }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {runsQuery.data.map((run, i) => (
-                  <tr
-                    key={run.jobId}
-                    className="neo-row-enter"
-                    style={{ borderTop: `1px solid ${color.rule}`, ["--neo-delay" as string]: `${Math.min(i, 12) * 24}ms` }}
-                  >
-                    <td style={{ padding: "12px", fontFamily: font.body, fontSize: 13, color: color.ink }}>
-                      {new Date(run.startedAt).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
-                    </td>
-                    <td style={{ padding: "12px", fontFamily: font.body, fontSize: 13, color: color.ink }}>{formatDuration(run.durationSeconds)}</td>
-                    <td style={{ padding: "12px", fontFamily: font.mono, fontSize: 12, color: color.ink }}>{run.targetsTotal}</td>
-                    <td style={{ padding: "12px", fontFamily: font.mono, fontSize: 12, color: color.ink }}>{run.placesFound}</td>
-                    <td style={{ padding: "12px", fontFamily: font.mono, fontSize: 12, color: color.ink }}>{run.resultsCount}</td>
-                    <td style={{ padding: "12px" }}><NeoStatusBadge status={run.status} /></td>
-                    <td style={{ padding: "12px" }}>
-                      <NeoButton variant="ghost" size="sm" onClick={() => navigate(`/results/${run.jobId}`)}>
-                        Results
-                      </NeoButton>
-                    </td>
+          <>
+            <div className="neo-responsive-table" style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 700 }}>
+                <thead>
+                  <tr style={{ background: color.sand }}>
+                    {["STARTED", "DURATION", "TARGETS", "PLACES", "LEADS", "STATUS", ""].map((h) => (
+                      <th key={h} style={{ textAlign: "left", padding: "10px 12px", fontFamily: font.body, fontWeight: 500, fontSize: 11, color: color.ink60 }}>{h}</th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {runsQuery.data.map((run, i) => (
+                    <tr
+                      key={run.jobId}
+                      className="neo-row-enter"
+                      style={{ borderTop: `1px solid ${color.rule}`, ["--neo-delay" as string]: `${Math.min(i, 12) * 24}ms` }}
+                    >
+                      <td style={{ padding: "12px", fontFamily: font.body, fontSize: 13, color: color.ink }}>
+                        {new Date(run.startedAt).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                      </td>
+                      <td style={{ padding: "12px", fontFamily: font.body, fontSize: 13, color: color.ink }}>{formatDuration(run.durationSeconds)}</td>
+                      <td style={{ padding: "12px", fontFamily: font.mono, fontSize: 12, color: color.ink }}>{run.targetsTotal}</td>
+                      <td style={{ padding: "12px", fontFamily: font.mono, fontSize: 12, color: color.ink }}>{run.placesFound}</td>
+                      <td style={{ padding: "12px", fontFamily: font.mono, fontSize: 12, color: color.ink }}>{run.resultsCount}</td>
+                      <td style={{ padding: "12px" }}><NeoStatusBadge status={run.status} /></td>
+                      <td style={{ padding: "12px" }}>
+                        <NeoButton variant="ghost" size="sm" onClick={() => navigate(`/results/${run.jobId}`)}>
+                          Results
+                        </NeoButton>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="neo-responsive-cards">
+              {runsQuery.data.map((run, i) => (
+                <div
+                  key={run.jobId}
+                  className="neo-row-enter"
+                  style={{
+                    border: `3px solid ${color.ink}`,
+                    background: color.white,
+                    padding: 12,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 8,
+                    ["--neo-delay" as string]: `${Math.min(i, 12) * 24}ms`,
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontFamily: font.body, fontWeight: 700, fontSize: 13, color: color.ink }}>
+                      {new Date(run.startedAt).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                    </span>
+                    <NeoStatusBadge status={run.status} />
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontFamily: font.body, fontSize: 12, color: color.ink60 }}>
+                    <span>Duration: {formatDuration(run.durationSeconds)}</span>
+                    <span style={{ fontFamily: font.mono, color: color.ink }}>{run.resultsCount} leads ({run.placesFound} places)</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontFamily: font.mono, fontSize: 11, color: color.ink60 }}>{run.targetsTotal} targets</span>
+                    <NeoButton variant="ghost" size="sm" onClick={() => navigate(`/results/${run.jobId}`)}>
+                      Results
+                    </NeoButton>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
     </div>

@@ -11,20 +11,21 @@ instead of NULL.
 
 Run against the app DB only: `alembic -x target=app upgrade app@head`.
 """
+
 import sqlalchemy as sa
 from alembic import op
 
-revision = 'c1d8e4a7f302'
-down_revision = 'a2e6c9f0b1d4'
+revision = "c1d8e4a7f302"
+down_revision = "a2e6c9f0b1d4"
 branch_labels = None
 depends_on = None
 
 
 def upgrade() -> None:
-    op.add_column('jobs', sa.Column('updated_at', sa.DateTime(), nullable=True))
+    op.add_column("jobs", sa.Column("updated_at", sa.DateTime(), nullable=True))
     op.execute("UPDATE jobs SET updated_at = created_at")
-    op.alter_column('jobs', 'updated_at', nullable=False)
+    op.alter_column("jobs", "updated_at", nullable=False)
 
 
 def downgrade() -> None:
-    op.drop_column('jobs', 'updated_at')
+    op.drop_column("jobs", "updated_at")

@@ -41,19 +41,27 @@ ROLE_MATRIX = [
     {"capability": "Run and view jobs", "owner": True, "operator": True, "viewer": True},
     {
         "capability": "Create and edit jobs, schedules, templates",
-        "owner": True, "operator": True, "viewer": False,
+        "owner": True,
+        "operator": True,
+        "viewer": False,
     },
     {
         "capability": "Manage proxies and suppression rules",
-        "owner": True, "operator": True, "viewer": False,
+        "owner": True,
+        "operator": True,
+        "viewer": False,
     },
     {
         "capability": "Manage integrations and API keys",
-        "owner": True, "operator": False, "viewer": False,
+        "owner": True,
+        "operator": False,
+        "viewer": False,
     },
     {
         "capability": "Invite, remove and change team roles",
-        "owner": True, "operator": False, "viewer": False,
+        "owner": True,
+        "operator": False,
+        "viewer": False,
     },
     {"capability": "View billing and audit log", "owner": True, "operator": False, "viewer": False},
 ]
@@ -115,9 +123,13 @@ def get_team(
 ) -> dict:
     members = db.execute(select(User).order_by(User.created_at.asc())).scalars().all()
     owner = _owner(db)
-    license_ = db.execute(
-        select(License).where(License.user_id == owner.id).order_by(License.expires_at.desc())
-    ).scalars().first()
+    license_ = (
+        db.execute(
+            select(License).where(License.user_id == owner.id).order_by(License.expires_at.desc())
+        )
+        .scalars()
+        .first()
+    )
     seats = license_.seats if license_ else 0
     # A disabled/removed member frees their seat -- Figma's own seat-limit
     # banner says "remove a member ... to invite more", which only holds if
@@ -138,9 +150,13 @@ def invite_member(
     db: Session = Depends(get_app_db),
 ) -> dict:
     owner = _owner(db)
-    license_ = db.execute(
-        select(License).where(License.user_id == owner.id).order_by(License.expires_at.desc())
-    ).scalars().first()
+    license_ = (
+        db.execute(
+            select(License).where(License.user_id == owner.id).order_by(License.expires_at.desc())
+        )
+        .scalars()
+        .first()
+    )
     seats = license_.seats if license_ else 0
     active_count = sum(1 for u in db.execute(select(User)).scalars().all() if u.disabled_at is None)
     if active_count >= seats:
@@ -167,15 +183,20 @@ def invite_member(
     db.flush()
 
     if license_ is not None:
-        db.add(License(
-            user_id=new_user.id,
-            plan=license_.plan,
-            seats=license_.seats,
-            expires_at=license_.expires_at,
-        ))
+        db.add(
+            License(
+                user_id=new_user.id,
+                plan=license_.plan,
+                seats=license_.seats,
+                expires_at=license_.expires_at,
+            )
+        )
     log_audit_event(
-        db, actor_email=admin.email, action="team.member_invited",
-        target=f"{new_user.email} ({new_user.role})", ip_address=client_ip(request),
+        db,
+        actor_email=admin.email,
+        action="team.member_invited",
+        target=f"{new_user.email} ({new_user.role})",
+        ip_address=client_ip(request),
     )
     db.commit()
 
@@ -199,7 +220,10 @@ def change_role(
     before_role = target.role
     target.role = payload.role
     log_audit_event(
-        db, actor_email=admin.email, action="team.role_changed", target=target.email,
+        db,
+        actor_email=admin.email,
+        action="team.role_changed",
+        target=target.email,
         ip_address=client_ip(request),
         before_after={"before": {"role": before_role}, "after": {"role": target.role}},
     )
@@ -222,7 +246,10 @@ def disable_member(
         )
     target.disabled_at = datetime.utcnow()
     log_audit_event(
-        db, actor_email=admin.email, action="team.member_disabled", target=target.email,
+        db,
+        actor_email=admin.email,
+        action="team.member_disabled",
+        target=target.email,
         ip_address=client_ip(request),
     )
     db.commit()
@@ -239,7 +266,10 @@ def enable_member(
     target = _get_member(db, user_id)
     target.disabled_at = None
     log_audit_event(
-        db, actor_email=admin.email, action="team.member_enabled", target=target.email,
+        db,
+        actor_email=admin.email,
+        action="team.member_enabled",
+        target=target.email,
         ip_address=client_ip(request),
     )
     db.commit()
@@ -267,7 +297,10 @@ def remove_member(
         )
     target.disabled_at = datetime.utcnow()
     log_audit_event(
-        db, actor_email=admin.email, action="team.member_removed", target=target.email,
+        db,
+        actor_email=admin.email,
+        action="team.member_removed",
+        target=target.email,
         ip_address=client_ip(request),
     )
     db.commit()

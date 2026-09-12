@@ -22,9 +22,27 @@ from app.db.models.result import SOCIAL_COLUMNS, Result
 from app.scraping.common.lead_score import lead_score
 
 COLUMNS = [
-    "category", "name", "rating", "address", "city", "state", "country", "zip_code",
-    "phone", "email", "website", "latitude", "longitude",
-    *SOCIAL_COLUMNS, "other_socials",
+    "category",
+    "name",
+    "rating",
+    "address",
+    "city",
+    "state",
+    "country",
+    "zip_code",
+    "phone",
+    "mobile_phone",
+    "email",
+    "website",
+    "decision_maker",
+    "latitude",
+    "longitude",
+    "sentiment_score",
+    "sentiment_label",
+    "pain_points",
+    "reviews_count",
+    *SOCIAL_COLUMNS,
+    "other_socials",
 ]
 
 

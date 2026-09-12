@@ -146,11 +146,14 @@ def cancel_job(db: Session, job: Job) -> dict:
     running = _dispatch_ids(db, job.id, ("running",))
     queued = _dispatch_ids(db, job.id, ("queued",))
 
-    cancelled = db.execute(
-        update(JobTarget)
-        .where(JobTarget.job_id == job.id, JobTarget.status.in_(tuple(ACTIVE_STATUSES)))
-        .values(status="cancelled", dispatched_at=None, dispatch_id=None)
-    ).rowcount or 0
+    cancelled = (
+        db.execute(
+            update(JobTarget)
+            .where(JobTarget.job_id == job.id, JobTarget.status.in_(tuple(ACTIVE_STATUSES)))
+            .values(status="cancelled", dispatched_at=None, dispatch_id=None)
+        ).rowcount
+        or 0
+    )
     job.status = "cancelled"
     db.commit()
 
@@ -242,15 +245,18 @@ def _release_undispatched(db: Session, job_id: uuid.UUID) -> int:
     that reached "running" has a browser open and is left to finish.
     """
     task_ids = _dispatch_ids(db, job_id, ("queued",))
-    released = db.execute(
-        update(JobTarget)
-        .where(
-            JobTarget.job_id == job_id,
-            JobTarget.status == "queued",
-            JobTarget.dispatched_at.is_not(None),
-        )
-        .values(dispatched_at=None, dispatch_id=None)
-    ).rowcount or 0
+    released = (
+        db.execute(
+            update(JobTarget)
+            .where(
+                JobTarget.job_id == job_id,
+                JobTarget.status == "queued",
+                JobTarget.dispatched_at.is_not(None),
+            )
+            .values(dispatched_at=None, dispatch_id=None)
+        ).rowcount
+        or 0
+    )
     db.commit()
 
     _revoke(task_ids)

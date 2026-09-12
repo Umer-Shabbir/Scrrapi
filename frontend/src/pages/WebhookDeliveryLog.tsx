@@ -28,6 +28,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import NeoButton from "../components/neo/NeoButton";
 import InlineWarning from "../components/neo/InlineWarning";
+import { SkeletonTable, SkeletonCard } from "../components/neo/Skeleton";
 import { api, ApiError } from "../api/client";
 import { color, font } from "../theme/neobrutalist";
 
@@ -138,22 +139,6 @@ function DeliveryDetail({ delivery }: { delivery: WebhookDelivery }) {
   );
 }
 
-function SkeletonRow() {
-  return (
-    <tr style={{ borderTop: `3px solid ${color.rule}` }}>
-      {[130, 150, 0, 60, 70, 90].map((w, i) => (
-        <td key={i} style={{ padding: "10px 12px" }}>
-          {i === 2 ? (
-            <div className="neo-skeleton" style={{ width: 60, height: 20, border: `2px solid ${color.rule}` }} />
-          ) : (
-            <div className="neo-skeleton" style={{ width: w || 80, height: 12 }} />
-          )}
-        </td>
-      ))}
-    </tr>
-  );
-}
-
 export default function WebhookDeliveryLog() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -250,93 +235,99 @@ export default function WebhookDeliveryLog() {
           scroll as a fallback above 768 rather than clipping); mobile gets a
           stacked card per delivery instead of a squeezed 6-column table.
           Both share the same click-to-expand detail panel. */}
-      <div className="neo-responsive-table" style={{ background: color.white, border: `3px solid ${color.ink}`, overflowX: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 760 }}>
-          <thead>
-            <tr style={{ background: color.sand }}>
-              {["TIMESTAMP", "EVENT", "STATUS", "ATTEMPT", "DURATION", "ACTIONS"].map((h) => (
-                <th key={h} style={{ textAlign: "left", padding: "10px 12px", fontFamily: font.body, fontWeight: 700, fontSize: "10.5px", letterSpacing: "0.315px", color: color.ink }}>
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {logQuery.isLoading &&
-              Array.from({ length: 4 }).map((_, i) => <SkeletonRow key={i} />)}
-
-            {log?.deliveries.length === 0 && !logQuery.isLoading && (
-              <tr>
-                <td colSpan={6} style={{ padding: 24, textAlign: "center", fontFamily: font.body, fontSize: 13, color: color.ink60 }}>
-                  No deliveries recorded yet for this webhook.
-                </td>
-              </tr>
-            )}
-
-            {log?.deliveries.map((d, i) => {
-              const expanded = expandedId === d.id;
-              return (
-                <Fragment key={d.id}>
-                  <tr
-                    onClick={() => setExpandedId(expanded ? null : d.id)}
-                    className="neo-row-enter"
-                    style={{ borderTop: `3px solid ${color.rule}`, cursor: "pointer", ["--neo-delay" as string]: `${Math.min(i, 12) * 24}ms` }}
-                  >
-                    <td style={{ padding: "10px 12px", fontFamily: font.mono, fontSize: 12, color: color.ink }}>
-                      {d.createdAt.replace("T", " ").slice(0, 19)}
-                    </td>
-                    <td style={{ padding: "10px 12px", fontFamily: font.body, fontSize: 13, color: color.ink }}>{d.event}</td>
-                    <td style={{ padding: "10px 12px" }}>
-                      <StatusChip delivery={d} />
-                    </td>
-                    <td style={{ padding: "10px 12px", fontFamily: font.mono, fontSize: 12, color: color.ink }}>
-                      {d.attempt}/{d.attemptMax}
-                    </td>
-                    <td style={{ padding: "10px 12px", fontFamily: font.mono, fontSize: 12, color: color.ink }}>
-                      {formatDuration(d.durationMs)}
-                    </td>
-                    <td style={{ padding: "10px 12px" }}>
-                      <button
-                        type="button"
-                        disabled={disabled || replayingId === d.id}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          replay.mutate(d.id);
-                        }}
-                        style={{
-                          border: "none",
-                          background: "transparent",
-                          cursor: disabled ? "default" : "pointer",
-                          padding: 0,
-                          fontFamily: font.body,
-                          fontWeight: 500,
-                          fontSize: 12.5,
-                          color: disabled ? color.ink60 : color.blue,
-                        }}
-                      >
-                        {replayingId === d.id ? "REPLAYING…" : "REPLAY"}
-                      </button>
+      <div className="neo-responsive-table" style={{ overflowX: "auto" }}>
+        {logQuery.isLoading ? (
+          <SkeletonTable rows={4} columns={6} />
+        ) : (
+          <div style={{ background: color.white, border: `3px solid ${color.ink}` }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 760 }}>
+              <thead>
+                <tr style={{ background: color.sand }}>
+                  {["TIMESTAMP", "EVENT", "STATUS", "ATTEMPT", "DURATION", "ACTIONS"].map((h) => (
+                    <th key={h} style={{ textAlign: "left", padding: "10px 12px", fontFamily: font.body, fontWeight: 700, fontSize: "10.5px", letterSpacing: "0.315px", color: color.ink }}>
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {log?.deliveries.length === 0 && (
+                  <tr>
+                    <td colSpan={6} style={{ padding: 24, textAlign: "center", fontFamily: font.body, fontSize: 13, color: color.ink60 }}>
+                      No deliveries recorded yet for this webhook.
                     </td>
                   </tr>
-                  {expanded && (
-                    <tr>
-                      <td colSpan={6} style={{ padding: 0 }}>
-                        <DeliveryDetail delivery={d} />
-                      </td>
-                    </tr>
-                  )}
-                </Fragment>
-              );
-            })}
-          </tbody>
-        </table>
+                )}
+
+                {log?.deliveries.map((d, i) => {
+                  const expanded = expandedId === d.id;
+                  return (
+                    <Fragment key={d.id}>
+                      <tr
+                        onClick={() => setExpandedId(expanded ? null : d.id)}
+                        className="neo-row-enter"
+                        style={{ borderTop: `3px solid ${color.rule}`, cursor: "pointer", ["--neo-delay" as string]: `${Math.min(i, 12) * 24}ms` }}
+                      >
+                        <td style={{ padding: "10px 12px", fontFamily: font.mono, fontSize: 12, color: color.ink }}>
+                          {d.createdAt.replace("T", " ").slice(0, 19)}
+                        </td>
+                        <td style={{ padding: "10px 12px", fontFamily: font.body, fontSize: 13, color: color.ink }}>{d.event}</td>
+                        <td style={{ padding: "10px 12px" }}>
+                          <StatusChip delivery={d} />
+                        </td>
+                        <td style={{ padding: "10px 12px", fontFamily: font.mono, fontSize: 12, color: color.ink }}>
+                          {d.attempt}/{d.attemptMax}
+                        </td>
+                        <td style={{ padding: "10px 12px", fontFamily: font.mono, fontSize: 12, color: color.ink }}>
+                          {formatDuration(d.durationMs)}
+                        </td>
+                        <td style={{ padding: "10px 12px" }}>
+                          <button
+                            type="button"
+                            disabled={disabled || replayingId === d.id}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              replay.mutate(d.id);
+                            }}
+                            style={{
+                              border: "none",
+                              background: "transparent",
+                              cursor: disabled ? "default" : "pointer",
+                              padding: 0,
+                              fontFamily: font.body,
+                              fontWeight: 500,
+                              fontSize: 12.5,
+                              color: disabled ? color.ink60 : color.blue,
+                            }}
+                          >
+                            {replayingId === d.id ? "REPLAYING…" : "REPLAY"}
+                          </button>
+                        </td>
+                      </tr>
+                      {expanded && (
+                        <tr>
+                          <td colSpan={6} style={{ padding: 0 }}>
+                            <DeliveryDetail delivery={d} />
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       <div className="neo-responsive-cards">
-        {logQuery.isLoading &&
-          Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="neo-skeleton" style={{ height: 84, border: `3px solid ${color.rule}` }} />
-          ))}
+        {logQuery.isLoading && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            {Array.from({ length: 4 }).map((_, i) => (
+              <SkeletonCard key={i} height={84} />
+            ))}
+          </div>
+        )}
 
         {log?.deliveries.length === 0 && !logQuery.isLoading && (
           <p style={{ margin: 0, padding: "24px 0", textAlign: "center", fontFamily: font.body, fontSize: 13, color: color.ink60 }}>

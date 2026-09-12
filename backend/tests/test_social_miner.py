@@ -52,9 +52,7 @@ def test_same_profile_linked_twice_counts_once() -> None:
 def test_facebook_numeric_profile_keeps_its_query() -> None:
     url = "https://www.facebook.com/profile.php?id=100064123456789&ref=page_internal"
 
-    assert canonicalize_social_url(url) == (
-        "https://facebook.com/profile.php?id=100064123456789"
-    )
+    assert canonicalize_social_url(url) == ("https://facebook.com/profile.php?id=100064123456789")
 
 
 def test_whatsapp_click_to_chat_is_a_profile() -> None:

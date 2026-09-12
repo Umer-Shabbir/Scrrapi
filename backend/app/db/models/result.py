@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, String
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import AppBase
@@ -88,6 +88,19 @@ class Result(AppBase):
     # column existed.
     phone_source: Mapped[str | None] = mapped_column(String(40), nullable=True)
     email_source: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    # Data Enrichment Depth fields:
+    # Decision-maker discovery (Owner, Founder, CEO names/titles)
+    decision_maker: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    # Direct personal mobile phone number(s)
+    mobile_phone: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    # Total review count on Maps
+    reviews_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # Sentiment score (0.0 to 1.0) and label (Positive, Neutral, Mixed, Negative)
+    sentiment_score: Mapped[float | None] = mapped_column(Float, nullable=True)
+    sentiment_label: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    # Extracted customer pain points / friction summary from reviews
+    pain_points: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+
     # Comma-joined signature names from app.scraping.common.tech_fingerprint, run
     # once against the business's own home page. NULL if there was no website to
     # check or the fetch failed -- absence of a signature is not "confirmed absent".
@@ -101,7 +114,7 @@ class Result(AppBase):
 
 # Tracked fields a re-scrape can produce a history entry for. Whatever
 # workers.tasks.record_history diffs against the prior same-place_key result.
-HISTORY_FIELDS = ("phone", "email", "rating")
+HISTORY_FIELDS = ("phone", "email", "rating", "decision_maker", "mobile_phone")
 
 
 class ResultHistory(AppBase):

@@ -131,16 +131,18 @@ async def test_search_website_on_startpage_skips_subdomains_of_directory_sites()
 async def test_search_website_on_startpage_treats_a_captcha_page_as_no_results() -> None:
     """The challenge page answers 200 and carries its own outbound links; mining
     them hands back a website that has nothing to do with the business."""
-    captcha_html = '<html><body><a href="https://www.reddit.com/r/StartpageSearch/">help</a></body></html>'
+    captcha_html = (
+        '<html><body><a href="https://www.reddit.com/r/StartpageSearch/">help</a></body></html>'
+    )
 
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.path == "/sp/search":
-            return httpx.Response(302, headers={"Location": "https://www.startpage.com/sp/captcha-block?bc=PK"})
+            return httpx.Response(
+                302, headers={"Location": "https://www.startpage.com/sp/captcha-block?bc=PK"}
+            )
         return httpx.Response(200, text=captcha_html)
 
-    async with httpx.AsyncClient(
-        transport=_transport(handler), follow_redirects=True
-    ) as client:
+    async with httpx.AsyncClient(transport=_transport(handler), follow_redirects=True) as client:
         result = await search_website_on_startpage("Joe's Plumbing", "Austin, TX", client=client)
 
     assert result is None

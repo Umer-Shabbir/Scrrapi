@@ -28,8 +28,13 @@ PHONE_SELECTOR = 'button[data-item-id^="phone:tel:"], a[href^="tel:"]'
 WEBSITE_SELECTOR = 'a[data-item-id="authority"]'
 CATEGORY_SELECTOR = "button.DkEaL"
 RATING_SELECTOR = 'div.F7nice span[aria-hidden="true"]'
+REVIEWS_COUNT_SELECTOR = (
+    'div.F7nice span:last-child, button[data-tab-index="1"], span[aria-label*="review"]'
+)
+REVIEW_SNIPPET_SELECTOR = "span.wiI7pd, div.MyEned span"
 
 RATING_RE = re.compile(r"(\d+(?:[.,]\d+)?)")
+REVIEWS_COUNT_RE = re.compile(r"\(?([\d,.\s]+)\)?")
 
 # Each detail-panel button (address, phone, ...) pairs an icon-font glyph with the
 # label text; the glyph is a Private Use Area code point that `inner_text()` returns
@@ -54,6 +59,8 @@ class PlaceData(TypedDict, total=False):
     phone: str
     category: str
     rating: float
+    reviews_count: int
+    reviews: list[str]
     latitude: float
     longitude: float
     website: str | None
@@ -120,6 +127,14 @@ async def get_place_data(place_url: str) -> PlaceData:
                     if rating is not None:
                         data["rating"] = rating
 
+                    reviews_count = await _reviews_count(page.locator(REVIEWS_COUNT_SELECTOR).first)
+                    if reviews_count is not None:
+                        data["reviews_count"] = reviews_count
+
+                    snippets = await _review_snippets(page.locator(REVIEW_SNIPPET_SELECTOR))
+                    if snippets:
+                        data["reviews"] = snippets
+
                     data["website"] = await _href(page.locator(WEBSITE_SELECTOR).first)
 
                     latitude, longitude = _lat_lng_from_url(page.url)
@@ -129,13 +144,16 @@ async def get_place_data(place_url: str) -> PlaceData:
                 finally:
                     await browser.close()
         except RateLimited:
-            pool.record_outcome(raw_proxy, "blocked", latency_ms=int((time.monotonic() - started) * 1000))
+            latency = int((time.monotonic() - started) * 1000)
+            pool.record_outcome(raw_proxy, "blocked", latency_ms=latency)
             raise
         except Exception:
-            pool.record_outcome(raw_proxy, "failure", latency_ms=int((time.monotonic() - started) * 1000))
+            latency = int((time.monotonic() - started) * 1000)
+            pool.record_outcome(raw_proxy, "failure", latency_ms=latency)
             raise
         else:
-            pool.record_outcome(raw_proxy, "success", latency_ms=int((time.monotonic() - started) * 1000))
+            latency = int((time.monotonic() - started) * 1000)
+            pool.record_outcome(raw_proxy, "success", latency_ms=latency)
 
         logger.info("place scraped", extra={"fields": sorted(data)})
         return data
@@ -175,6 +193,29 @@ async def _rating(locator: Locator) -> float | None:
     if not match:
         return None
     return float(match.group(1).replace(",", "."))
+
+
+async def _reviews_count(locator: Locator) -> int | None:
+    text = await _inner_text(locator)
+    if not text:
+        return None
+    match = REVIEWS_COUNT_RE.search(text)
+    if not match:
+        return None
+    digits = re.sub(r"\D", "", match.group(1))
+    return int(digits) if digits else None
+
+
+async def _review_snippets(locator: Locator, limit: int = 10) -> list[str]:
+    count = await locator.count()
+    if count == 0:
+        return []
+    snippets: list[str] = []
+    for i in range(min(count, limit)):
+        text = await _inner_text(locator.nth(i))
+        if text and len(text) > 10:
+            snippets.append(text)
+    return snippets
 
 
 def _lat_lng_from_url(url: str) -> tuple[float | None, float | None]:

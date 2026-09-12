@@ -30,42 +30,41 @@ success rate are computed at read time from these, not stored redundantly.
 
 Run against the app DB only: `alembic -x target=app upgrade app@head`.
 """
+
 import sqlalchemy as sa
 from alembic import op
 
-revision = 'e91c4a6d0f57'
-down_revision = 'd5b8f3a072e9'
+revision = "e91c4a6d0f57"
+down_revision = "d5b8f3a072e9"
 branch_labels = None
 depends_on = None
 
 
 def upgrade() -> None:
     op.create_table(
-        'proxies',
-        sa.Column('id', sa.Uuid(), primary_key=True),
-        sa.Column('host', sa.String(length=255), nullable=False),
-        sa.Column('port', sa.Integer(), nullable=False),
-        sa.Column('protocol', sa.String(length=10), nullable=False, server_default='http'),
-        sa.Column('username', sa.String(length=255), nullable=True),
-        sa.Column('password', sa.String(length=255), nullable=True),
-        sa.Column('country', sa.String(length=100), nullable=True),
-        sa.Column('status', sa.String(length=20), nullable=False, server_default='active'),
-        sa.Column('success_count', sa.Integer(), nullable=False, server_default='0'),
-        sa.Column('failure_count', sa.Integer(), nullable=False, server_default='0'),
-        sa.Column('block_count', sa.Integer(), nullable=False, server_default='0'),
-        sa.Column('latency_ms_total', sa.BigInteger(), nullable=False, server_default='0'),
-        sa.Column('latency_samples', sa.Integer(), nullable=False, server_default='0'),
-        sa.Column('cooling_until', sa.DateTime(), nullable=True),
-        sa.Column('last_used_at', sa.DateTime(), nullable=True),
-        sa.Column('created_at', sa.DateTime(), nullable=False),
+        "proxies",
+        sa.Column("id", sa.Uuid(), primary_key=True),
+        sa.Column("host", sa.String(length=255), nullable=False),
+        sa.Column("port", sa.Integer(), nullable=False),
+        sa.Column("protocol", sa.String(length=10), nullable=False, server_default="http"),
+        sa.Column("username", sa.String(length=255), nullable=True),
+        sa.Column("password", sa.String(length=255), nullable=True),
+        sa.Column("country", sa.String(length=100), nullable=True),
+        sa.Column("status", sa.String(length=20), nullable=False, server_default="active"),
+        sa.Column("success_count", sa.Integer(), nullable=False, server_default="0"),
+        sa.Column("failure_count", sa.Integer(), nullable=False, server_default="0"),
+        sa.Column("block_count", sa.Integer(), nullable=False, server_default="0"),
+        sa.Column("latency_ms_total", sa.BigInteger(), nullable=False, server_default="0"),
+        sa.Column("latency_samples", sa.Integer(), nullable=False, server_default="0"),
+        sa.Column("cooling_until", sa.DateTime(), nullable=True),
+        sa.Column("last_used_at", sa.DateTime(), nullable=True),
+        sa.Column("created_at", sa.DateTime(), nullable=False),
     )
-    op.create_index(op.f('ix_proxies_status'), 'proxies', ['status'])
-    op.create_unique_constraint(
-        'uq_proxies_host_port', 'proxies', ['host', 'port']
-    )
+    op.create_index(op.f("ix_proxies_status"), "proxies", ["status"])
+    op.create_unique_constraint("uq_proxies_host_port", "proxies", ["host", "port"])
 
 
 def downgrade() -> None:
-    op.drop_constraint('uq_proxies_host_port', 'proxies', type_='unique')
-    op.drop_index(op.f('ix_proxies_status'), table_name='proxies')
-    op.drop_table('proxies')
+    op.drop_constraint("uq_proxies_host_port", "proxies", type_="unique")
+    op.drop_index(op.f("ix_proxies_status"), table_name="proxies")
+    op.drop_table("proxies")

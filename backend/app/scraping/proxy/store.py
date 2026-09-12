@@ -31,9 +31,11 @@ def reactivate_cooled_proxies(db: Session, *, now: datetime | None = None) -> in
     would be, so a separate periodic task would just be a slower version of
     the same check."""
     now = now or datetime.utcnow()
-    cooled = db.execute(
-        select(Proxy).where(Proxy.status == "cooling", Proxy.cooling_until <= now)
-    ).scalars().all()
+    cooled = (
+        db.execute(select(Proxy).where(Proxy.status == "cooling", Proxy.cooling_until <= now))
+        .scalars()
+        .all()
+    )
     for row in cooled:
         row.status = "active"
         row.cooling_until = None
@@ -52,9 +54,13 @@ def select_active_proxy(db: Session, index: int) -> Proxy | None:
     `created_at` at least gives a stable, meaningful order (oldest-added
     first) that ties break consistently within one call.
     """
-    rows = db.execute(
-        select(Proxy).where(Proxy.status == "active").order_by(Proxy.created_at, Proxy.id)
-    ).scalars().all()
+    rows = (
+        db.execute(
+            select(Proxy).where(Proxy.status == "active").order_by(Proxy.created_at, Proxy.id)
+        )
+        .scalars()
+        .all()
+    )
     if not rows:
         return None
     return rows[index % len(rows)]
@@ -101,6 +107,8 @@ def record_proxy_outcome(
         if consecutive_blocks[key] >= CONSECUTIVE_BLOCKS_BEFORE_COOLING and row.status == "active":
             row.status = "cooling"
             row.cooling_until = now + timedelta(minutes=COOLDOWN_MINUTES)
-            logger.info("proxy auto-cooled after repeated blocks", extra={"host": host, "port": port})
+            logger.info(
+                "proxy auto-cooled after repeated blocks", extra={"host": host, "port": port}
+            )
 
     db.commit()

@@ -96,13 +96,16 @@ async def get_place_urls(search_url: str, *, timeout_s: int = 60) -> list[str]:
                 finally:
                     await browser.close()
         except RateLimited:
-            pool.record_outcome(raw_proxy, "blocked", latency_ms=int((time.monotonic() - started) * 1000))
+            latency = int((time.monotonic() - started) * 1000)
+            pool.record_outcome(raw_proxy, "blocked", latency_ms=latency)
             raise
         except Exception:
-            pool.record_outcome(raw_proxy, "failure", latency_ms=int((time.monotonic() - started) * 1000))
+            latency = int((time.monotonic() - started) * 1000)
+            pool.record_outcome(raw_proxy, "failure", latency_ms=latency)
             raise
         else:
-            pool.record_outcome(raw_proxy, "success", latency_ms=int((time.monotonic() - started) * 1000))
+            latency = int((time.monotonic() - started) * 1000)
+            pool.record_outcome(raw_proxy, "success", latency_ms=latency)
 
         place_urls = _dedupe_place_urls(hrefs)
         logger.info(

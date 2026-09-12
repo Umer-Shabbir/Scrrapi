@@ -77,11 +77,15 @@ def list_keys(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_app_db),
 ) -> dict:
-    keys = db.execute(
-        select(ApiKey)
-        .where(ApiKey.owner_id == user.id, ApiKey.revoked_at.is_(None))
-        .order_by(ApiKey.created_at.desc())
-    ).scalars().all()
+    keys = (
+        db.execute(
+            select(ApiKey)
+            .where(ApiKey.owner_id == user.id, ApiKey.revoked_at.is_(None))
+            .order_by(ApiKey.created_at.desc())
+        )
+        .scalars()
+        .all()
+    )
     return {"keys": [_key_dict(k) for k in keys]}
 
 
@@ -106,7 +110,10 @@ def create_key(
     )
     db.add(key)
     log_audit_event(
-        db, actor_email=user.email, action="apikey.created", target=f'API key "{key.label}"',
+        db,
+        actor_email=user.email,
+        action="apikey.created",
+        target=f'API key "{key.label}"',
         ip_address=client_ip(request),
     )
     db.commit()
@@ -135,7 +142,10 @@ def revoke_key(
 
     key.revoked_at = datetime.utcnow()
     log_audit_event(
-        db, actor_email=user.email, action="apikey.revoked", target=f'API key "{key.label}"',
+        db,
+        actor_email=user.email,
+        action="apikey.revoked",
+        target=f'API key "{key.label}"',
         ip_address=client_ip(request),
     )
     db.commit()

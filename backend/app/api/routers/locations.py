@@ -19,6 +19,7 @@ diacritics makes the picker unusable. Both halves are index-assisted
 city on earth on every keystroke.
 """
 
+import math
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -200,4 +201,165 @@ def list_zips(
         ],
         "total": total,
         "truncated": total > len(rows),
+    }
+
+
+@router.get("/radius")
+def search_radius(
+    lat: float = Query(..., ge=-90, le=90),
+    lon: float = Query(..., ge=-180, le=180),
+    radius_km: float = Query(..., gt=0, le=1000),
+    type: str = Query("zip", description="zip or city"),
+    db: Session = Depends(get_geo_db),
+    limit: int | None = Query(None, ge=1),
+) -> dict:
+    """Find cities or ZIPs within a Haversine radius."""
+    if type not in ("zip", "city"):
+        raise HTTPException(status_code=422, detail="type must be zip or city")
+
+    model = ZipCode if type == "zip" else City
+
+    # Approximation for bounding box
+    lat_deg = radius_km / 111.0
+    # Add a small buffer for longitude approximation issues
+    cos_lat = math.cos(math.radians(lat))
+    lon_deg = (radius_km / (111.0 * cos_lat)) if cos_lat > 0.01 else 180.0
+
+    min_lat, max_lat = lat - lat_deg, lat + lat_deg
+    min_lon, max_lon = lon - lon_deg, lon + lon_deg
+
+    distance_expr = 6371.0 * func.acos(
+        # Use case to prevent domain errors in acos if math precision issues cause >1 values
+        func.least(
+            1.0,
+            func.greatest(
+                -1.0,
+                func.cos(func.radians(lat))
+                * func.cos(func.radians(model.latitude))
+                * func.cos(func.radians(model.longitude) - func.radians(lon))
+                + func.sin(func.radians(lat)) * func.sin(func.radians(model.latitude)),
+            ),
+        )
+    )
+
+    base = select(model)
+    if type == "zip":
+        base = base.join(City, City.id == ZipCode.city_id).add_columns(
+            City.name, distance_expr.label("dist")
+        )
+    else:
+        base = base.add_columns(model.name, distance_expr.label("dist"))
+
+    base = base.where(model.latitude.is_not(None), model.longitude.is_not(None))
+    base = base.where(model.latitude.between(min_lat, max_lat))
+
+    if min_lon < -180:
+        base = base.where(or_(model.longitude >= (min_lon + 360), model.longitude <= max_lon))
+    elif max_lon > 180:
+        base = base.where(or_(model.longitude >= min_lon, model.longitude <= (max_lon - 360)))
+    else:
+        base = base.where(model.longitude.between(min_lon, max_lon))
+
+    base = base.where(distance_expr <= radius_km)
+
+    cap = _cap(limit)
+    rows = db.execute(base.order_by(distance_expr).limit(cap)).all()
+
+    # We want truncation checks? With complex spatial queries it's hard to count cheaply.
+    # Radius bounds usually expect the exact items, no complex pagination yet.
+    # We'll just return items.
+
+    items = []
+    if type == "zip":
+        for z, city_name, dist in rows:
+            items.append(
+                {
+                    "id": str(z.id),
+                    "name": z.code,
+                    "cityName": city_name,
+                    "distanceKm": dist,
+                    "latitude": z.latitude,
+                    "longitude": z.longitude,
+                }
+            )
+    else:
+        for c, _name_ign, dist in rows:
+            items.append(
+                {
+                    "id": str(c.id),
+                    "name": c.name,
+                    "distanceKm": dist,
+                    "latitude": c.latitude,
+                    "longitude": c.longitude,
+                }
+            )
+
+    return {
+        "items": items,
+        "total": len(items),
+        "truncated": len(items) == cap,
+    }
+
+
+@router.get("/bounds")
+def search_bounds(
+    min_lat: float = Query(..., ge=-90, le=90),
+    max_lat: float = Query(..., ge=-90, le=90),
+    min_lon: float = Query(..., ge=-180, le=180),
+    max_lon: float = Query(..., ge=-180, le=180),
+    type: str = Query("zip", description="zip or city"),
+    db: Session = Depends(get_geo_db),
+    limit: int | None = Query(None, ge=1),
+) -> dict:
+    """Find cities or ZIPs within a geographic bounding box."""
+    if type not in ("zip", "city"):
+        raise HTTPException(status_code=422, detail="type must be zip or city")
+
+    model = ZipCode if type == "zip" else City
+
+    base = select(model)
+    if type == "zip":
+        base = base.join(City, City.id == ZipCode.city_id).add_columns(City.name)
+    else:
+        base = base.add_columns(model.name)
+
+    base = base.where(model.latitude.is_not(None), model.longitude.is_not(None))
+    base = base.where(model.latitude.between(min_lat, max_lat))
+
+    # Handle antimeridian crossing
+    if min_lon > max_lon:
+        base = base.where(or_(model.longitude >= min_lon, model.longitude <= max_lon))
+    else:
+        base = base.where(model.longitude.between(min_lon, max_lon))
+
+    cap = _cap(limit)
+    rows = db.execute(base.limit(cap)).all()
+
+    items = []
+    if type == "zip":
+        for z, city_name in rows:
+            items.append(
+                {
+                    "id": str(z.id),
+                    "name": z.code,
+                    "cityName": city_name,
+                    "latitude": z.latitude,
+                    "longitude": z.longitude,
+                }
+            )
+    else:
+        for c, _name_ign in rows:
+            items.append(
+                {
+                    "id": str(c.id),
+                    "name": c.name,
+                    "latitude": c.latitude,
+                    "longitude": c.longitude,
+                }
+            )
+
+    return {
+        "items": items,
+        "total": len(items),
+        "truncated": len(items) == cap,
     }

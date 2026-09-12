@@ -387,7 +387,7 @@ export default function ZipCascadeSelect({ onChange, resetKey = 0 }: Props) {
       {areaMode && (
         <Alert severity="info">
           {country?.name} has no postal code system, so there are no ZIPs to load — for
-          about half the world's countries none exist to find. These places are the search
+          about half the world&apos;s countries none exist to find. These places are the search
           areas instead: pick some or take all of them, and each becomes its own search.
         </Alert>
       )}
@@ -517,7 +517,7 @@ export default function ZipCascadeSelect({ onChange, resetKey = 0 }: Props) {
       {page?.truncated && (
         <Alert severity="warning">
           Showing the first {optionCount} of {page.total} {unit} — the buttons above only
-          take what's listed. Type to narrow it{areaMode ? "" : ", or pick a single city"},
+          take what&apos;s listed. Type to narrow it{areaMode ? "" : ", or pick a single city"},
           to reach the rest.
         </Alert>
       )}

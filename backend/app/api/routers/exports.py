@@ -79,9 +79,15 @@ def list_exports(
     db: Session = Depends(get_app_db),
 ) -> list[dict]:
     job = _get_owned_job(db, job_id, user)
-    exports = db.execute(
-        select(Export).where(Export.job_id == job.id).order_by(Export.generated_at.desc().nulls_first())
-    ).scalars().all()
+    exports = (
+        db.execute(
+            select(Export)
+            .where(Export.job_id == job.id)
+            .order_by(Export.generated_at.desc().nulls_first())
+        )
+        .scalars()
+        .all()
+    )
     return [_export_dict(export) for export in exports]
 
 

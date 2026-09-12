@@ -27,10 +27,11 @@ another full scan. pg_trgm GIN covers it.
 
 Run against the geo DB only: `alembic -x target=geo upgrade geo@head`.
 """
+
 from alembic import op
 
-revision = 'c93f5a08d1e7'
-down_revision = '7f3a9c1d5e2b'
+revision = "c93f5a08d1e7"
+down_revision = "7f3a9c1d5e2b"
 branch_labels = None
 depends_on = None
 

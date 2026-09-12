@@ -22,6 +22,7 @@ import { useQuery } from "@tanstack/react-query";
 import ZipCascadeSelect from "../components/ZipCascadeSelect";
 import { api, ApiError } from "../api/client";
 import NeoButton from "../components/neo/NeoButton";
+import NeoRadio from "../components/neo/NeoRadio";
 import InlineWarning from "../components/neo/InlineWarning";
 import {
   LOCATION_SEPARATORS,
@@ -127,6 +128,74 @@ export default function Locations() {
   const [areaSets, setAreaSets] = useState<AreaSet[]>(loadAreaSets);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
 
+  const [radiusCenterLat, setRadiusCenterLat] = useState<string>("");
+  const [radiusCenterLon, setRadiusCenterLon] = useState<string>("");
+  const [radiusKm, setRadiusKm] = useState<string>("50");
+  const [radiusType, setRadiusType] = useState<"zip" | "city">("zip");
+  const [radiusLoading, setRadiusLoading] = useState(false);
+
+  const [boundsMinLat, setBoundsMinLat] = useState<string>("");
+  const [boundsMaxLat, setBoundsMaxLat] = useState<string>("");
+  const [boundsMinLon, setBoundsMinLon] = useState<string>("");
+  const [boundsMaxLon, setBoundsMaxLon] = useState<string>("");
+  const [boundsType, setBoundsType] = useState<"zip" | "city">("zip");
+  const [boundsLoading, setBoundsLoading] = useState(false);
+
+  async function performRadiusSearch() {
+    if (!radiusCenterLat || !radiusCenterLon || !radiusKm) return;
+    setRadiusLoading(true);
+    try {
+      const res = await api.get<{items: any[], total: number, truncated: boolean}>(
+        `/api/geo/radius?lat=${radiusCenterLat}&lon=${radiusCenterLon}&radius_km=${radiusKm}&type=${radiusType}&limit=500`
+      );
+      if (res.items.length === 0) {
+        setNotice("Radius search found no results.");
+      } else {
+        const batch = res.items.map(item => ({
+          id: item.id,
+          label: radiusType === "zip" ? `${item.name}, ${item.cityName}` : item.name,
+          zipCode: radiusType === "zip" ? item.name : null,
+          city: radiusType === "zip" ? item.cityName : item.name,
+          region: null,
+          country: null,
+        }));
+        queue(batch);
+      }
+    } catch (e: any) {
+      setNotice(`Error: ${e.message}`);
+    } finally {
+      setRadiusLoading(false);
+    }
+  }
+
+  async function performBoundsSearch() {
+    if (!boundsMinLat || !boundsMaxLat || !boundsMinLon || !boundsMaxLon) return;
+    setBoundsLoading(true);
+    try {
+      const res = await api.get<{items: any[], total: number, truncated: boolean}>(
+        `/api/geo/bounds?min_lat=${boundsMinLat}&max_lat=${boundsMaxLat}&min_lon=${boundsMinLon}&max_lon=${boundsMaxLon}&type=${boundsType}&limit=500`
+      );
+      if (res.items.length === 0) {
+        setNotice("Polygon/Bounds search found no results.");
+      } else {
+        const batch = res.items.map(item => ({
+          id: item.id,
+          label: boundsType === "zip" ? `${item.name}, ${item.cityName}` : item.name,
+          zipCode: boundsType === "zip" ? item.name : null,
+          city: boundsType === "zip" ? item.cityName : item.name,
+          region: null,
+          country: null,
+        }));
+        queue(batch);
+      }
+    } catch (e: any) {
+      setNotice(`Error: ${e.message}`);
+    } finally {
+      setBoundsLoading(false);
+    }
+  }
+
+
   const countries = useQuery({
     queryKey: ["geo", "countries"],
     queryFn: () => api.get<GeoOption[]>("/api/geo/countries"),
@@ -163,7 +232,7 @@ export default function Locations() {
     saveAreaSets(next);
   }
 
-  function useAreaSet(set: AreaSet) {
+  function applyAreaSet(set: AreaSet) {
     const added = addLocations(set.locations, "append");
     setNotice(`Added ${added} of ${set.locations.length} area(s) from "${set.name}".`);
   }
@@ -210,13 +279,8 @@ export default function Locations() {
             WHEN ADDING
           </span>
           {(["append", "replace"] as const).map((m) => (
-            <label key={m} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
-              <span
-                style={{ width: 18, height: 18, border: `3px solid ${color.ink}`, display: "grid", placeItems: "center" }}
-                onClick={() => setMode(m)}
-              >
-                {mode === m && <span style={{ width: 8, height: 8, background: color.ink }} />}
-              </span>
+            <label key={m} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }} onClick={() => setMode(m)}>
+              <NeoRadio checked={mode === m} onChange={() => setMode(m)} />
               <span style={{ fontFamily: font.body, fontWeight: 700, fontSize: 12, color: mode === m ? color.ink : color.ink60 }}>
                 {m.toUpperCase()}
               </span>
@@ -243,7 +307,7 @@ export default function Locations() {
         <Card title="ADD AREAS">
           <div style={{ display: "flex", gap: 24, borderBottom: `2px solid ${color.rule}` }}>
             {TABS.map((t) => {
-              const disabled = t === "Radius" || t === "Polygon";
+              const disabled = false;
               return (
                 <button
                   key={t}
@@ -276,10 +340,55 @@ export default function Locations() {
             })}
           </div>
 
-          {(tab === "Radius" || tab === "Polygon") && (
-            <p style={{ margin: 0, fontFamily: font.body, fontSize: 12, color: color.ink60 }}>
-              {tab} search isn&rsquo;t available yet — no geo-shape search exists on the backend.
-            </p>
+          {tab === "Radius" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <div style={{ display: "flex", gap: 12 }}>
+                <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }} onClick={() => setRadiusType("zip")}>
+                  <NeoRadio checked={radiusType === "zip"} onChange={() => setRadiusType("zip")} />
+                  <span style={{ fontFamily: font.body, fontSize: 13, color: color.ink }}>ZIP Codes</span>
+                </label>
+                <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }} onClick={() => setRadiusType("city")}>
+                  <NeoRadio checked={radiusType === "city"} onChange={() => setRadiusType("city")} />
+                  <span style={{ fontFamily: font.body, fontSize: 13, color: color.ink }}>Cities</span>
+                </label>
+              </div>
+              <div style={{ display: "flex", gap: 12 }}>
+                <input value={radiusCenterLat} onChange={e => setRadiusCenterLat(e.target.value)} placeholder="Lat (e.g. 30.2672)" style={{ flex: 1, height: 40, border: `3px solid ${color.ink}`, padding: "0 12px", fontFamily: font.body, boxSizing: "border-box" }} />
+                <input value={radiusCenterLon} onChange={e => setRadiusCenterLon(e.target.value)} placeholder="Lon (e.g. -97.7431)" style={{ flex: 1, height: 40, border: `3px solid ${color.ink}`, padding: "0 12px", fontFamily: font.body, boxSizing: "border-box" }} />
+                <input value={radiusKm} onChange={e => setRadiusKm(e.target.value)} placeholder="Radius (km)" style={{ width: 100, flexShrink: 0, height: 40, border: `3px solid ${color.ink}`, padding: "0 12px", fontFamily: font.body, boxSizing: "border-box" }} />
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <NeoButton variant="primary" disabled={!radiusCenterLat || !radiusCenterLon || !radiusKm || radiusLoading} onClick={performRadiusSearch}>
+                  {radiusLoading ? "Searching..." : "Search & Add"}
+                </NeoButton>
+              </div>
+            </div>
+          )}
+
+          {tab === "Polygon" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <div style={{ display: "flex", gap: 12 }}>
+                <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }} onClick={() => setBoundsType("zip")}>
+                  <NeoRadio checked={boundsType === "zip"} onChange={() => setBoundsType("zip")} />
+                  <span style={{ fontFamily: font.body, fontSize: 13, color: color.ink }}>ZIP Codes</span>
+                </label>
+                <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }} onClick={() => setBoundsType("city")}>
+                  <NeoRadio checked={boundsType === "city"} onChange={() => setBoundsType("city")} />
+                  <span style={{ fontFamily: font.body, fontSize: 13, color: color.ink }}>Cities</span>
+                </label>
+              </div>
+              <div style={{ display: "flex", gap: 12 }}>
+                <input value={boundsMinLat} onChange={e => setBoundsMinLat(e.target.value)} placeholder="Min Lat" style={{ flex: 1, height: 40, border: `3px solid ${color.ink}`, padding: "0 12px", fontFamily: font.body, boxSizing: "border-box" }} />
+                <input value={boundsMaxLat} onChange={e => setBoundsMaxLat(e.target.value)} placeholder="Max Lat" style={{ flex: 1, height: 40, border: `3px solid ${color.ink}`, padding: "0 12px", fontFamily: font.body, boxSizing: "border-box" }} />
+                <input value={boundsMinLon} onChange={e => setBoundsMinLon(e.target.value)} placeholder="Min Lon" style={{ flex: 1, height: 40, border: `3px solid ${color.ink}`, padding: "0 12px", fontFamily: font.body, boxSizing: "border-box" }} />
+                <input value={boundsMaxLon} onChange={e => setBoundsMaxLon(e.target.value)} placeholder="Max Lon" style={{ flex: 1, height: 40, border: `3px solid ${color.ink}`, padding: "0 12px", fontFamily: font.body, boxSizing: "border-box" }} />
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <NeoButton variant="primary" disabled={!boundsMinLat || !boundsMaxLat || !boundsMinLon || !boundsMaxLon || boundsLoading} onClick={performBoundsSearch}>
+                  {boundsLoading ? "Searching..." : "Search & Add"}
+                </NeoButton>
+              </div>
+            </div>
           )}
 
           {tab === "Cascade" && (
@@ -356,7 +465,7 @@ export default function Locations() {
                       {set.locations.length} AREA{set.locations.length === 1 ? "" : "S"}
                     </p>
                   </div>
-                  <NeoButton variant="secondary" size="sm" onClick={() => useAreaSet(set)}>
+                  <NeoButton variant="secondary" size="sm" onClick={() => applyAreaSet(set)}>
                     Use
                   </NeoButton>
                   <button

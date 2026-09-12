@@ -56,8 +56,7 @@ def login(
                 detail={
                     "code": "account_locked",
                     "message": (
-                        f"Account locked — {settings.login_max_failed_attempts} "
-                        "failed attempts"
+                        f"Account locked — {settings.login_max_failed_attempts} failed attempts"
                     ),
                     "locked_until": user.locked_until.isoformat(),
                 },
@@ -163,7 +162,9 @@ def acknowledge_compliance(
     pane 1 next time rather than being treated as done.
     """
     log_audit_event(
-        db, actor_email=user.email, action=_COMPLIANCE_PANE_ACTIONS[pane],
+        db,
+        actor_email=user.email,
+        action=_COMPLIANCE_PANE_ACTIONS[pane],
         ip_address=client_ip(request),
     )
     if pane == 3:
@@ -241,22 +242,28 @@ def read_account(
     month_start = _month_start(now)
     next_month_start = _add_month(month_start)
 
-    places_this_month = db.scalar(
-        select(func.count()).select_from(Result).where(Result.scraped_at >= month_start)
-    ) or 0
-    exports_this_month = db.scalar(
-        select(func.count()).select_from(Export).where(
-            Export.generated_at.is_not(None), Export.generated_at >= month_start
+    places_this_month = (
+        db.scalar(select(func.count()).select_from(Result).where(Result.scraped_at >= month_start))
+        or 0
+    )
+    exports_this_month = (
+        db.scalar(
+            select(func.count())
+            .select_from(Export)
+            .where(Export.generated_at.is_not(None), Export.generated_at >= month_start)
         )
-    ) or 0
+        or 0
+    )
 
     history_floor = month_start
     for _ in range(USAGE_HISTORY_MONTHS - 1):
         history_floor = _month_start(history_floor - timedelta(days=1))
 
-    rows = db.execute(
-        select(Result.scraped_at).where(Result.scraped_at >= history_floor)
-    ).scalars().all()
+    rows = (
+        db.execute(select(Result.scraped_at).where(Result.scraped_at >= history_floor))
+        .scalars()
+        .all()
+    )
     counts: dict[str, int] = {}
     cursor = history_floor
     while cursor < next_month_start:

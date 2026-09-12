@@ -13,18 +13,19 @@ branch on which one is set (see app/api/routers/exports.py).
 
 Run against the app DB only: `alembic -x target=app upgrade app@head`.
 """
+
 import sqlalchemy as sa
 from alembic import op
 
-revision = 'a4756f58b340'
-down_revision = '881f9cbe6b82'
+revision = "a4756f58b340"
+down_revision = "881f9cbe6b82"
 branch_labels = None
 depends_on = None
 
 
 def upgrade() -> None:
-    op.add_column('exports', sa.Column('external_url', sa.String(length=500), nullable=True))
+    op.add_column("exports", sa.Column("external_url", sa.String(length=500), nullable=True))
 
 
 def downgrade() -> None:
-    op.drop_column('exports', 'external_url')
+    op.drop_column("exports", "external_url")

@@ -11,18 +11,19 @@ a name keep displaying the id, same as before.
 
 Run against the app DB only: `alembic -x target=app upgrade app@head`.
 """
+
 import sqlalchemy as sa
 from alembic import op
 
-revision = 'd7b3f5e91a68'
-down_revision = 'c1d8e4a7f302'
+revision = "d7b3f5e91a68"
+down_revision = "c1d8e4a7f302"
 branch_labels = None
 depends_on = None
 
 
 def upgrade() -> None:
-    op.add_column('jobs', sa.Column('name', sa.String(length=255), nullable=True))
+    op.add_column("jobs", sa.Column("name", sa.String(length=255), nullable=True))
 
 
 def downgrade() -> None:
-    op.drop_column('jobs', 'name')
+    op.drop_column("jobs", "name")

@@ -19,6 +19,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import NeoButton from "../components/neo/NeoButton";
+import { SkeletonCard } from "../components/neo/Skeleton";
 import { api, ApiError } from "../api/client";
 import { color, font } from "../theme/neobrutalist";
 import type { ComponentStatus, SystemHealthResponse } from "../types";
@@ -66,45 +67,84 @@ function WorkerTable({ workers }: { workers: SystemHealthResponse["workers"] }) 
     );
   }
   return (
-    <div style={{ background: color.white, border: `3px solid ${color.ink}`, maxWidth: 750, overflowX: "auto" }}>
-      <div style={{ display: "flex", background: color.sand, borderBottom: `3px solid ${color.ink}`, height: 36 }}>
-        {[["HOSTNAME", 220], ["ACTIVE TASKS", 130], ["LAST HEARTBEAT", 160], ["STATUS", 110]].map(([h, w]) => (
-          <div key={h as string} style={{ display: "flex", alignItems: "center", padding: "0 12px", width: w as number, flexShrink: 0 }}>
-            <span style={{ fontFamily: font.body, fontWeight: 700, fontSize: 10, letterSpacing: "0.2px", color: color.ink }}>{h}</span>
+    <>
+      <div className="neo-responsive-table" style={{ background: color.white, border: `3px solid ${color.ink}`, maxWidth: 750, overflowX: "auto" }}>
+        <div style={{ display: "flex", background: color.sand, borderBottom: `3px solid ${color.ink}`, height: 36 }}>
+          {[["HOSTNAME", 220], ["ACTIVE TASKS", 130], ["LAST HEARTBEAT", 160], ["STATUS", 110]].map(([h, w]) => (
+            <div key={h as string} style={{ display: "flex", alignItems: "center", padding: "0 12px", width: w as number, flexShrink: 0 }}>
+              <span style={{ fontFamily: font.body, fontWeight: 700, fontSize: 10, letterSpacing: "0.2px", color: color.ink }}>{h}</span>
+            </div>
+          ))}
+        </div>
+        {workers.map((w, i) => (
+          <div
+            key={w.hostname}
+            className="neo-row-enter"
+            style={{ display: "flex", height: 40, borderBottom: `3px solid ${color.rule}`, alignItems: "center", ["--neo-delay" as string]: `${Math.min(i, 12) * 24}ms` }}
+          >
+            <div style={{ padding: "0 12px", width: 220, flexShrink: 0 }}>
+              <span style={{ fontFamily: font.mono, fontSize: 11, color: color.ink }}>{w.hostname}</span>
+            </div>
+            <div style={{ padding: "0 12px", width: 130, flexShrink: 0 }}>
+              <span style={{ fontFamily: font.body, fontWeight: 500, fontSize: 12, color: color.ink }}>{w.activeTasks}</span>
+            </div>
+            <div style={{ padding: "0 12px", width: 160, flexShrink: 0 }}>
+              <span style={{ fontFamily: font.mono, fontSize: 11, color: color.ink }}>
+                {new Date(w.lastHeartbeat).toLocaleTimeString()}
+              </span>
+            </div>
+            <div style={{ padding: "0 12px", width: 110, flexShrink: 0 }}>
+              <span
+                style={{
+                  display: "inline-flex", alignItems: "center", padding: "3px 8px",
+                  border: `2px solid ${color.ink}`, background: w.online ? color.green : color.pink,
+                  fontFamily: font.body, fontWeight: 700, fontSize: 10, color: color.ink, whiteSpace: "nowrap",
+                }}
+              >
+                {w.online ? "✓ ONLINE" : "✕ UNRESPONSIVE"}
+              </span>
+            </div>
           </div>
         ))}
       </div>
-      {workers.map((w, i) => (
-        <div
-          key={w.hostname}
-          className="neo-row-enter"
-          style={{ display: "flex", height: 40, borderBottom: `3px solid ${color.rule}`, alignItems: "center", ["--neo-delay" as string]: `${Math.min(i, 12) * 24}ms` }}
-        >
-          <div style={{ padding: "0 12px", width: 220, flexShrink: 0 }}>
-            <span style={{ fontFamily: font.mono, fontSize: 11, color: color.ink }}>{w.hostname}</span>
+
+      <div className="neo-responsive-cards">
+        {workers.map((w, i) => (
+          <div
+            key={w.hostname}
+            className="neo-row-enter"
+            style={{
+              border: `3px solid ${color.ink}`,
+              background: color.white,
+              padding: 12,
+              display: "flex",
+              flexDirection: "column",
+              gap: 8,
+              ["--neo-delay" as string]: `${Math.min(i, 12) * 24}ms`,
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+              <span style={{ fontFamily: font.mono, fontWeight: 700, fontSize: 12.5, color: color.ink }}>
+                {w.hostname}
+              </span>
+              <span
+                style={{
+                  display: "inline-flex", alignItems: "center", padding: "2px 6px",
+                  border: `2px solid ${color.ink}`, background: w.online ? color.green : color.pink,
+                  fontFamily: font.body, fontWeight: 700, fontSize: 9.5, color: color.ink, whiteSpace: "nowrap",
+                }}
+              >
+                {w.online ? "✓ ONLINE" : "✕ UNRESPONSIVE"}
+              </span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", fontFamily: font.body, fontSize: 12, color: color.ink60 }}>
+              <span>Active tasks: <strong style={{ color: color.ink, fontFamily: font.mono }}>{w.activeTasks}</strong></span>
+              <span>Heartbeat: {new Date(w.lastHeartbeat).toLocaleTimeString()}</span>
+            </div>
           </div>
-          <div style={{ padding: "0 12px", width: 130, flexShrink: 0 }}>
-            <span style={{ fontFamily: font.body, fontWeight: 500, fontSize: 12, color: color.ink }}>{w.activeTasks}</span>
-          </div>
-          <div style={{ padding: "0 12px", width: 160, flexShrink: 0 }}>
-            <span style={{ fontFamily: font.mono, fontSize: 11, color: color.ink }}>
-              {new Date(w.lastHeartbeat).toLocaleTimeString()}
-            </span>
-          </div>
-          <div style={{ padding: "0 12px", width: 110, flexShrink: 0 }}>
-            <span
-              style={{
-                display: "inline-flex", alignItems: "center", padding: "3px 8px",
-                border: `2px solid ${color.ink}`, background: w.online ? color.green : color.pink,
-                fontFamily: font.body, fontWeight: 700, fontSize: 10, color: color.ink, whiteSpace: "nowrap",
-              }}
-            >
-              {w.online ? "✓ ONLINE" : "✕ UNRESPONSIVE"}
-            </span>
-          </div>
-        </div>
-      ))}
-    </div>
+        ))}
+      </div>
+    </>
   );
 }
 
@@ -152,7 +192,9 @@ function TilesSkeleton() {
   return (
     <div style={{ display: "flex", flexWrap: "wrap", gap: 14, maxWidth: 1020 }}>
       {Array.from({ length: 5 }, (_, i) => (
-        <div key={i} className="neo-skeleton" style={{ width: 240, height: 108, border: `3px solid ${color.ink}` }} />
+        <div key={i} style={{ width: 240 }}>
+          <SkeletonCard height={108} />
+        </div>
       ))}
     </div>
   );

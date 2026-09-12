@@ -102,7 +102,7 @@ function DeleteConfirmModal({ template, onCancel, onConfirm, pending }: { templa
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(17,17,17,0.7)", display: "grid", placeItems: "center", zIndex: 1000 }}>
       <div style={{ background: color.white, border: `3px solid ${color.ink}`, boxShadow: "10px 10px 0px 0px #111", width: 440 }}>
-        <div style={{ background: color.pink, color: color.white, padding: "14px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ borderBottom: `3px solid ${color.ink}`, background: color.pink, color: color.white, padding: "14px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span style={{ fontFamily: font.body, fontWeight: 700, fontSize: 14, letterSpacing: "0.28px", textTransform: "uppercase" }}>Delete template</span>
           <button type="button" onClick={onCancel} style={{ border: "none", background: "transparent", color: color.white, cursor: "pointer", fontSize: 14 }}>✕</button>
         </div>

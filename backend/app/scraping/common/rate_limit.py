@@ -114,9 +114,7 @@ class RateLimitTracker:
         state = self._hosts.setdefault(host, _HostState())
         state.consecutive += 1
 
-        cooldown = min(
-            self.base_cooldown_s * (2 ** (state.consecutive - 1)), self.max_cooldown_s
-        )
+        cooldown = min(self.base_cooldown_s * (2 ** (state.consecutive - 1)), self.max_cooldown_s)
         if retry_after is not None:
             cooldown = max(cooldown, retry_after)
 

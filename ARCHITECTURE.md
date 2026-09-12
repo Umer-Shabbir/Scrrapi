@@ -153,6 +153,13 @@ depth, wall-clock, response size and concurrency are all capped from config, and
 the crawl degrades to "whatever it had found when the budget ran out" rather than
 failing the enrichment.
 
+### 3.6 Data Enrichment Depth
+
+Extends beyond general store contact info with three high-value capabilities:
+- **Decision-Maker Discovery** (`scraping/common/decision_maker_miner.py`): Finds Owner, Founder, CEO, and executive names from schema.org JSON-LD structured data, DOM bio/leadership cards, and contextual leadership patterns.
+- **Direct Personal Mobile Phone Numbers** (`scraping/common/mobile_miner.py`): Identifies personal cell lines and WhatsApp direct numbers via context cues and international mobile numbering plan heuristics.
+- **Review Sentiment & Pain-Point Extraction** (`scraping/common/review_sentiment.py`): Scores customer review sentiment and extracts recurring customer pain points (delays, unexpected fees, service quality, communication friction).
+
 ---
 
 ## 4. Frontend
@@ -201,7 +208,7 @@ Queueing is explicitly **append or replace** — a queue is usually assembled ov
 - `users`, `licenses` (plan, seats, expires_at)
 - `jobs` (id, status, source [google/bing], created_by, created_at)
 - `job_targets` (job_id, keyword, location_label, zip_code, city, region, country, status, places_found, places_done) — the geo four are nullable, since a hand-typed location has a label and nothing under it
-- `results` (job_id, category, name, address, city, state, country, zip, phone, email, website, lat, lon, facebook, instagram, linkedin, twitter, youtube, tiktok, whatsapp, other_socials, scraped_at) — `phone`/`email` each hold a `", "`-joined list (Maps' own value first, then whatever the deep crawl added), which is why they are sized 500/1000 rather than 50/255; the social columns are NULL unless the crawler ran
+- `results` (job_id, category, name, address, city, state, country, zip, phone, email, mobile_phone, decision_maker, reviews_count, sentiment_score, sentiment_label, pain_points, website, lat, lon, facebook, instagram, linkedin, twitter, youtube, tiktok, whatsapp, other_socials, scraped_at) — `phone`/`email`/`mobile_phone` each hold a `", "`-joined list; social columns, mobile, decision maker, and review sentiment are populated via the deep crawl and place enrichment pipeline
 - `exports` (job_id, format, file_path, generated_at)
 - `app_settings` (key, value, updated_at) — runtime preferences the Settings page writes and every worker reads: `concurrent_targets`, `deep_crawl_enabled`, `deep_crawl_max_pages`
 

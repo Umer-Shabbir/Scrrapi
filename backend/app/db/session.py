@@ -17,9 +17,7 @@ settings = get_settings()
 # size can't, so it has to cover the max the worker will ever ask for.
 # Postgres' own default max_connections is 100; this (72) leaves room for the
 # API process and psql/admin connections alongside one worker at full tilt.
-app_engine = create_engine(
-    settings.app_db_url, pool_pre_ping=True, pool_size=32, max_overflow=40
-)
+app_engine = create_engine(settings.app_db_url, pool_pre_ping=True, pool_size=32, max_overflow=40)
 geo_engine = create_engine(settings.geo_db_url, pool_pre_ping=True)
 
 AppSessionLocal = sessionmaker(bind=app_engine, autoflush=False, autocommit=False)

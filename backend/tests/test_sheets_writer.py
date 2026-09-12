@@ -15,13 +15,29 @@ from app.export.sheets_writer import SheetsNotConfigured, write_sheets
 
 def _result(**overrides) -> Result:
     defaults = dict(
-        id=uuid.uuid4(), job_id=uuid.uuid4(),
-        category="Plumber", name="Austin Plumbing", address="1 Main St",
-        city="Austin", state="TX", country="US", zip_code="78701",
-        phone="555-0100", email="a@b.com", website="b.com",
-        latitude=30.1, longitude=-97.7, rating=4.8,
-        facebook=None, instagram=None, linkedin=None, twitter=None,
-        youtube=None, tiktok=None, whatsapp=None, other_socials=None,
+        id=uuid.uuid4(),
+        job_id=uuid.uuid4(),
+        category="Plumber",
+        name="Austin Plumbing",
+        address="1 Main St",
+        city="Austin",
+        state="TX",
+        country="US",
+        zip_code="78701",
+        phone="555-0100",
+        email="a@b.com",
+        website="b.com",
+        latitude=30.1,
+        longitude=-97.7,
+        rating=4.8,
+        facebook=None,
+        instagram=None,
+        linkedin=None,
+        twitter=None,
+        youtube=None,
+        tiktok=None,
+        whatsapp=None,
+        other_socials=None,
         tech_stack=None,
     )
     defaults.update(overrides)
@@ -68,10 +84,12 @@ class _FakeSpreadsheets:
 
     def create(self, *, body, fields):
         self._sink["title"] = body["properties"]["title"]
-        return _FakeRequest({
-            "spreadsheetId": "sheet123",
-            "spreadsheetUrl": "https://docs.google.com/spreadsheets/d/sheet123",
-        })
+        return _FakeRequest(
+            {
+                "spreadsheetId": "sheet123",
+                "spreadsheetUrl": "https://docs.google.com/spreadsheets/d/sheet123",
+            }
+        )
 
     def values(self):
         return _FakeValues(self._sink)

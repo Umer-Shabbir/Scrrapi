@@ -27,7 +27,9 @@ def test_empty_html_is_empty_list() -> None:
 
 async def test_fetch_tech_stack_detects_from_response_body() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(200, text='<link href="/wp-content/style.css">', headers={"content-type": "text/html"})
+        return httpx.Response(
+            200, text='<link href="/wp-content/style.css">', headers={"content-type": "text/html"}
+        )
 
     async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
         assert await fetch_tech_stack("https://example.com", client=client) == ["WordPress"]

@@ -241,22 +241,45 @@ API, worker and UI together. See the README.
   job pays for 2000 crawls — which is why the toggle is read per place rather
   than per worker, and turning it off mid-job applies to the places still queued.
 
+- [x] **4.6 Data Enrichment Depth**
+  Files: `backend/app/scraping/common/decision_maker_miner.py`,
+  `mobile_miner.py`, `review_sentiment.py`, `structured_data.py`, `place_enrichment.py`;
+  DB migration `e8f1a2c3b4d5_add_data_enrichment_depth_columns.py`; UI in
+  `frontend/src/components/LeadDetailDrawer.tsx` and `ResultsGrid.tsx`.
+
+  Enriches leads beyond store-level general contact details:
+  1. **Decision-maker discovery**: Extracts Owner, Founder, CEO, and executive
+     names & titles across structured schema.org JSON-LD (Person/jobTitle/founder
+     nodes), semantic HTML team/leadership cards, and contextual patterns
+     ("Owner: Jane Smith", "Founded by John Doe", "Jane Smith, CEO").
+  2. **Direct personal mobile phone numbers**: Discovers direct cell/mobile lines
+     using wa.me/sms links, labeled phone runs ("Mobile:", "Direct:", "Cell:"),
+     and international mobile numbering plan heuristics (UK 07xxx, DE 015/016/017,
+     FR 06/07, ES 6xx/7xx, IT 3xx, AU 04xx), distinguishing direct lines from general
+     switchboards.
+  3. **Customer review sentiment analysis & pain-point extraction**: Analyzes
+     Google Maps customer reviews, computing sentiment scores/labels (Positive,
+     Neutral, Mixed, Negative) and extracting customer pain points (long wait times,
+     overpriced/hidden fees, rude customer service, communication friction, subpar quality).
+  Wired into the result schema, lead scoring weights, exports (CSV/XLSX/JSONL/Sheets),
+  and UI drawers/grids.
+
 ---
 
 ## Phase 5 — Proxy pool & rate limiting
 
-- [ ] **5.1 Single-proxy mode**
+- [x] **5.1 Single-proxy mode**
   File: `backend/app/scraping/proxy/pool.py::get_proxy`
   Just returns the configured `PROXY_SINGLE_URL`. Wire into Playwright context launch args.
 
-- [ ] **5.2 Random delay between requests**
+- [x] **5.2 Random delay between requests**
   Same file, `delay()`
   `asyncio.sleep(random.uniform(min_ms, max_ms) / 1000)`, called between place scrapes.
 
-- [ ] **5.3 List mode**
+- [x] **5.3 List mode**
   Load proxies from `PROXY_LIST_PATH`, round-robin or random pick per request.
 
-- [ ] **5.4 Free-list mode (optional, lowest priority)**
+- [x] **5.4 Free-list mode (optional, lowest priority)**
   Fetch from an aggregator source, cache with TTL, same interface as 5.1/5.3.
 
 ---
@@ -326,7 +349,7 @@ API, worker and UI together. See the README.
   before the insert (which is what stops a late row hitting a foreign key against a
   deleted job).
 
-- [ ] **6.6 Job status rolls up before its places finish**
+- [x] **6.6 Job status rolls up before its places finish**
   `_refresh_job_status` marks a job "done" once every `JobTarget` is terminal, but
   the `scrape_place` subtasks those targets enqueued are still running — observed
   results landing ~2 minutes after the job read "done". The status needs to account
@@ -366,11 +389,11 @@ API, worker and UI together. See the README.
   Files: `backend/app/api/routers/exports.py`, `backend/app/workers/tasks.py::export_job`
   POST enqueues, GET polls status + returns download URL once `file_path` set.
 
-- [ ] **8.3 XLSX writer**
+- [x] **8.3 XLSX writer**
   File: `backend/app/export/xlsx_writer.py::write_xlsx`
   `openpyxl`, same column order as CSV.
 
-- [ ] **8.4 KML writer**
+- [x] **8.4 KML writer**
   File: `backend/app/export/kml_writer.py::write_kml`
   Placemark per result with lat/long.
 

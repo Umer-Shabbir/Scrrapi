@@ -126,7 +126,7 @@ export default function Categories() {
     savePacks(next);
   }
 
-  function usePack(pack: KeywordPack) {
+  function applyPack(pack: KeywordPack) {
     const added = addKeywords(pack.keywords);
     setNotice(`Added ${added} of ${pack.keywords.length} keyword(s) from "${pack.name}".`);
   }
@@ -301,7 +301,7 @@ export default function Categories() {
                         {pack.keywords.length} KEYWORD{pack.keywords.length === 1 ? "" : "S"} · SAVED BY YOU
                       </p>
                     </div>
-                    <NeoButton variant="secondary" size="sm" onClick={() => usePack(pack)}>
+                    <NeoButton variant="secondary" size="sm" onClick={() => applyPack(pack)}>
                       Use pack
                     </NeoButton>
                     <button

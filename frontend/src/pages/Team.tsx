@@ -17,6 +17,7 @@ import InlineWarning from "../components/neo/InlineWarning";
 import { useAuth } from "../auth/AuthContext";
 import { api, ApiError } from "../api/client";
 import { color, font, shadow } from "../theme/neobrutalist";
+import { SkeletonTable } from "../components/neo/Skeleton";
 import type { InviteMemberResponse, TeamMember, TeamResponse, TeamRole } from "../types";
 
 const ROLE_LABEL: Record<TeamRole, string> = { owner: "Owner", operator: "Operator", viewer: "Viewer" };
@@ -62,31 +63,33 @@ function MemberStatusChip({ status }: { status: TeamMember["status"] }) {
 
 function RoleMatrixPanel({ rows }: { rows: TeamResponse["roleMatrix"] }) {
   return (
-    <div style={{ background: color.white, border: `3px solid ${color.ink}`, padding: 16, display: "flex", flexDirection: "column", gap: 10, marginBottom: 24, maxWidth: 1126 }}>
+    <div style={{ background: color.white, border: `3px solid ${color.ink}`, padding: 16, display: "flex", flexDirection: "column", gap: 10, marginBottom: 24, maxWidth: 1126, overflowX: "auto" }}>
       <p style={{ margin: 0, fontFamily: font.body, fontWeight: 700, fontSize: 14, letterSpacing: "0.28px", color: color.ink }}>
         ROLE MATRIX
       </p>
-      <div style={{ display: "flex", background: color.sand, border: `3px solid ${color.ink}`, height: 32 }}>
-        {["CAPABILITY", "OWNER", "OPERATOR", "VIEWER"].map((h, i) => (
-          <div key={h} style={{ display: "flex", alignItems: "center", padding: "0 12px", width: i === 0 ? 350 : 250 }}>
-            <span style={{ fontFamily: font.body, fontWeight: 700, fontSize: 10.5, letterSpacing: "0.21px", color: color.ink }}>{h}</span>
-          </div>
-        ))}
-      </div>
-      {rows.map((row) => (
-        <div key={row.capability} style={{ display: "flex", height: 34, border: `3px solid ${color.rule}`, alignItems: "center" }}>
-          <div style={{ padding: "0 12px", width: 350 }}>
-            <span style={{ fontFamily: font.body, fontWeight: 500, fontSize: 12, color: color.ink }}>{row.capability}</span>
-          </div>
-          {([row.owner, row.operator, row.viewer] as const).map((flag, i) => (
-            <div key={i} style={{ padding: "0 12px", width: 250 }}>
-              <span style={{ fontFamily: font.body, fontWeight: 700, fontSize: 13, color: flag ? color.green : color.ink60 }}>
-                {flag ? "✓" : "—"}
-              </span>
+      <div style={{ minWidth: 600 }}>
+        <div style={{ display: "flex", background: color.sand, border: `3px solid ${color.ink}`, height: 32 }}>
+          {["CAPABILITY", "OWNER", "OPERATOR", "VIEWER"].map((h, i) => (
+            <div key={h} style={{ display: "flex", alignItems: "center", padding: "0 12px", width: i === 0 ? 300 : 100, flex: i === 0 ? 1 : undefined }}>
+              <span style={{ fontFamily: font.body, fontWeight: 700, fontSize: 10.5, letterSpacing: "0.21px", color: color.ink }}>{h}</span>
             </div>
           ))}
         </div>
-      ))}
+        {rows.map((row) => (
+          <div key={row.capability} style={{ display: "flex", height: 34, border: `3px solid ${color.rule}`, alignItems: "center" }}>
+            <div style={{ padding: "0 12px", width: 300, flex: 1 }}>
+              <span style={{ fontFamily: font.body, fontWeight: 500, fontSize: 12, color: color.ink }}>{row.capability}</span>
+            </div>
+            {([row.owner, row.operator, row.viewer] as const).map((flag, i) => (
+              <div key={i} style={{ padding: "0 12px", width: 100 }}>
+                <span style={{ fontFamily: font.body, fontWeight: 700, fontSize: 13, color: flag ? color.green : color.ink60 }}>
+                  {flag ? "✓" : "—"}
+                </span>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -111,66 +114,128 @@ function MemberTable({
   pendingId: string | null;
 }) {
   return (
-    <div style={{ background: color.white, border: `3px solid ${color.ink}`, maxWidth: 1126, overflowX: "auto" }}>
-      <div style={{ display: "flex", background: color.sand, borderBottom: `3px solid ${color.ink}`, height: 36 }}>
-        {[["EMAIL", 280], ["ROLE", 130], ["LAST SEEN", 150], ["STATUS", 110], ["ACTIONS", 0]].map(([h, w]) => (
-          <div key={h as string} style={{ display: "flex", alignItems: "center", padding: "0 12px", width: (w as number) || undefined, flex: w ? undefined : 1 }}>
-            <span style={{ fontFamily: font.body, fontWeight: 700, fontSize: 10.5, letterSpacing: "0.21px", color: color.ink }}>{h}</span>
-          </div>
-        ))}
+    <>
+      <div className="neo-responsive-table" style={{ background: color.white, border: `3px solid ${color.ink}`, maxWidth: 1126, overflowX: "auto" }}>
+        <div style={{ display: "flex", background: color.sand, borderBottom: `3px solid ${color.ink}`, height: 36 }}>
+          {[["EMAIL", 280], ["ROLE", 130], ["LAST SEEN", 150], ["STATUS", 110], ["ACTIONS", 0]].map(([h, w]) => (
+            <div key={h as string} style={{ display: "flex", alignItems: "center", padding: "0 12px", width: (w as number) || undefined, flex: w ? undefined : 1 }}>
+              <span style={{ fontFamily: font.body, fontWeight: 700, fontSize: 10.5, letterSpacing: "0.21px", color: color.ink }}>{h}</span>
+            </div>
+          ))}
+        </div>
+        {members.map((m, i) => {
+          const isSelf = m.id === currentUserId;
+          const disabled = m.status === "disabled";
+          return (
+            <div
+              key={m.id}
+              className="neo-row-enter"
+              style={{ display: "flex", borderBottom: `3px solid ${color.rule}`, height: 40, alignItems: "center", opacity: disabled ? 0.6 : 1, ["--neo-delay" as string]: `${Math.min(i, 12) * 24}ms` }}
+            >
+              <div style={{ padding: "0 12px", width: 280 }}>
+                <span style={{ fontFamily: font.mono, fontSize: 11.5, color: color.ink }}>{m.email}</span>
+              </div>
+              <div style={{ padding: "0 12px", width: 130 }}>
+                <span style={{ fontFamily: font.body, fontWeight: 500, fontSize: 12.5, color: color.ink }}>{ROLE_LABEL[m.role]}</span>
+              </div>
+              <div style={{ padding: "0 12px", width: 150 }}>
+                <span style={{ fontFamily: font.body, fontWeight: 500, fontSize: 12.5, color: color.ink }}>{lastSeenLabel(m)}</span>
+              </div>
+              <div style={{ padding: "0 12px", width: 110 }}>
+                <MemberStatusChip status={m.status} />
+              </div>
+              <div style={{ padding: "0 12px", flex: 1, display: "flex", gap: 8, alignItems: "center" }}>
+                {isOwner && !isSelf ? (
+                  <>
+                    <button type="button" onClick={() => onChangeRole(m)} disabled={pendingId === m.id} style={linkBtnStyle}>
+                      CHANGE ROLE
+                    </button>
+                    <span style={{ color: color.ink60 }}>·</span>
+                    {disabled ? (
+                      <button type="button" onClick={() => onEnable(m)} disabled={pendingId === m.id} style={linkBtnStyle}>
+                        ENABLE
+                      </button>
+                    ) : (
+                      <button type="button" onClick={() => onDisable(m)} disabled={pendingId === m.id} style={linkBtnStyle}>
+                        DISABLE
+                      </button>
+                    )}
+                    <span style={{ color: color.ink60 }}>·</span>
+                    <button type="button" onClick={() => onRemove(m)} disabled={pendingId === m.id} style={{ ...linkBtnStyle, color: color.pink }}>
+                      REMOVE
+                    </button>
+                  </>
+                ) : (
+                  <span style={{ fontFamily: font.body, fontSize: 11, color: color.ink60 }}>
+                    {isSelf ? "This is you" : "—"}
+                  </span>
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
-      {members.map((m, i) => {
-        const isSelf = m.id === currentUserId;
-        const disabled = m.status === "disabled";
-        return (
-          <div
-            key={m.id}
-            className="neo-row-enter"
-            style={{ display: "flex", borderBottom: `3px solid ${color.rule}`, height: 40, alignItems: "center", opacity: disabled ? 0.6 : 1, ["--neo-delay" as string]: `${Math.min(i, 12) * 24}ms` }}
-          >
-            <div style={{ padding: "0 12px", width: 280 }}>
-              <span style={{ fontFamily: font.mono, fontSize: 11.5, color: color.ink }}>{m.email}</span>
-            </div>
-            <div style={{ padding: "0 12px", width: 130 }}>
-              <span style={{ fontFamily: font.body, fontWeight: 500, fontSize: 12.5, color: color.ink }}>{ROLE_LABEL[m.role]}</span>
-            </div>
-            <div style={{ padding: "0 12px", width: 150 }}>
-              <span style={{ fontFamily: font.body, fontWeight: 500, fontSize: 12.5, color: color.ink }}>{lastSeenLabel(m)}</span>
-            </div>
-            <div style={{ padding: "0 12px", width: 110 }}>
-              <MemberStatusChip status={m.status} />
-            </div>
-            <div style={{ padding: "0 12px", flex: 1, display: "flex", gap: 8, alignItems: "center" }}>
-              {isOwner && !isSelf ? (
-                <>
-                  <button type="button" onClick={() => onChangeRole(m)} disabled={pendingId === m.id} style={linkBtnStyle}>
-                    CHANGE ROLE
-                  </button>
-                  <span style={{ color: color.ink60 }}>·</span>
-                  {disabled ? (
-                    <button type="button" onClick={() => onEnable(m)} disabled={pendingId === m.id} style={linkBtnStyle}>
-                      ENABLE
+
+      <div className="neo-responsive-cards">
+        {members.map((m, i) => {
+          const isSelf = m.id === currentUserId;
+          const disabled = m.status === "disabled";
+          return (
+            <div
+              key={m.id}
+              className="neo-row-enter"
+              style={{
+                border: `3px solid ${color.ink}`,
+                background: color.white,
+                padding: 12,
+                display: "flex",
+                flexDirection: "column",
+                gap: 8,
+                opacity: disabled ? 0.6 : 1,
+                ["--neo-delay" as string]: `${Math.min(i, 12) * 24}ms`,
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                <div>
+                  <span style={{ fontFamily: font.mono, fontWeight: 700, fontSize: 13, color: color.ink }}>{m.email}</span>
+                  <p style={{ margin: "2px 0 0", fontFamily: font.body, fontSize: 12, color: color.ink60 }}>
+                    {ROLE_LABEL[m.role]} · {lastSeenLabel(m)}
+                  </p>
+                </div>
+                <MemberStatusChip status={m.status} />
+              </div>
+              <div style={{ display: "flex", gap: 8, alignItems: "center", borderTop: `1px solid ${color.rule}`, paddingTop: 6 }}>
+                {isOwner && !isSelf ? (
+                  <>
+                    <button type="button" onClick={() => onChangeRole(m)} disabled={pendingId === m.id} style={linkBtnStyle}>
+                      CHANGE ROLE
                     </button>
-                  ) : (
-                    <button type="button" onClick={() => onDisable(m)} disabled={pendingId === m.id} style={linkBtnStyle}>
-                      DISABLE
+                    <span style={{ color: color.ink60 }}>·</span>
+                    {disabled ? (
+                      <button type="button" onClick={() => onEnable(m)} disabled={pendingId === m.id} style={linkBtnStyle}>
+                        ENABLE
+                      </button>
+                    ) : (
+                      <button type="button" onClick={() => onDisable(m)} disabled={pendingId === m.id} style={linkBtnStyle}>
+                        DISABLE
+                      </button>
+                    )}
+                    <span style={{ color: color.ink60 }}>·</span>
+                    <button type="button" onClick={() => onRemove(m)} disabled={pendingId === m.id} style={{ ...linkBtnStyle, color: color.pink }}>
+                      REMOVE
                     </button>
-                  )}
-                  <span style={{ color: color.ink60 }}>·</span>
-                  <button type="button" onClick={() => onRemove(m)} disabled={pendingId === m.id} style={{ ...linkBtnStyle, color: color.pink }}>
-                    REMOVE
-                  </button>
-                </>
-              ) : (
-                <span style={{ fontFamily: font.body, fontSize: 11, color: color.ink60 }}>
-                  {isSelf ? "This is you" : "—"}
-                </span>
-              )}
+                  </>
+                ) : (
+                  <span style={{ fontFamily: font.body, fontSize: 11, color: color.ink60 }}>
+                    {isSelf ? "This is you" : "—"}
+                  </span>
+                )}
+              </div>
             </div>
-          </div>
-        );
-      })}
-    </div>
+          );
+        })}
+      </div>
+    </>
   );
 }
 
@@ -199,7 +264,7 @@ function InviteDrawer({ onClose, onInvited }: { onClose: () => void; onInvited: 
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(17,17,17,0.7)", display: "flex", justifyContent: "flex-end", zIndex: 1000 }}>
       <div style={{ background: color.white, width: 450, height: "100%", boxShadow: shadow.lg, display: "flex", flexDirection: "column" }}>
-        <div style={{ background: color.ink, color: color.white, padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ borderBottom: `3px solid ${color.ink}`, background: color.ink, color: color.white, padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span style={{ fontFamily: font.body, fontWeight: 700, fontSize: 14, letterSpacing: "0.28px", textTransform: "uppercase" }}>
             Invite member
           </span>
@@ -280,18 +345,25 @@ function InviteDrawer({ onClose, onInvited }: { onClose: () => void; onInvited: 
 function InvitedRevealModal({ result, onClose }: { result: InviteMemberResponse; onClose: () => void }) {
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(17,17,17,0.7)", display: "grid", placeItems: "center", zIndex: 1100 }}>
-      <div style={{ background: color.white, border: `3px solid ${color.ink}`, boxShadow: shadow.md, width: 460, padding: 20, display: "flex", flexDirection: "column", gap: 12 }}>
-        <h2 style={{ margin: 0, fontFamily: font.head, fontSize: 18, color: color.ink }}>MEMBER INVITED</h2>
-        <p style={{ margin: 0, fontFamily: font.body, fontSize: 13, color: color.ink60 }}>
-          There's no email delivery in this app -- share this temp password with{" "}
-          <strong style={{ color: color.ink }}>{result.email}</strong> directly. It won't be shown again.
-        </p>
-        <div style={{ background: color.sand, border: `3px solid ${color.ink}`, padding: "10px 12px" }}>
-          <span style={{ fontFamily: font.mono, fontSize: 14, color: color.ink }}>{result.tempPassword}</span>
+      <div style={{ background: color.white, border: `3px solid ${color.ink}`, boxShadow: shadow.md, width: 460, display: "flex", flexDirection: "column" }}>
+        <div style={{ borderBottom: `3px solid ${color.ink}`, background: color.green, color: color.white, padding: "14px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span style={{ fontFamily: font.body, fontWeight: 700, fontSize: 14, letterSpacing: "0.28px", textTransform: "uppercase" }}>Member invited</span>
+          <button type="button" onClick={onClose} style={{ border: "none", background: "transparent", color: color.white, cursor: "pointer", fontSize: 14 }}>✕</button>
         </div>
-        <NeoButton variant="primary" onClick={onClose}>
-          Done
-        </NeoButton>
+        <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 12 }}>
+          <p style={{ margin: 0, fontFamily: font.body, fontSize: 13, color: color.ink60 }}>
+            There&apos;s no email delivery in this app -- share this temp password with{" "}
+            <strong style={{ color: color.ink }}>{result.email}</strong> directly. It won&apos;t be shown again.
+          </p>
+          <div style={{ background: color.sand, border: `3px solid ${color.ink}`, padding: "10px 12px" }}>
+            <span style={{ fontFamily: font.mono, fontSize: 14, color: color.ink }}>{result.tempPassword}</span>
+          </div>
+          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+            <NeoButton variant="primary" onClick={onClose}>
+              Done
+            </NeoButton>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -387,17 +459,9 @@ export default function Team() {
       )}
 
       {teamQuery.isLoading && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-          <div style={{ maxWidth: 1126, display: "flex", flexDirection: "column", gap: 4 }}>
-            {Array.from({ length: 7 }, (_, i) => (
-              <div key={i} className="neo-skeleton" style={{ height: 34, border: `3px solid ${color.ink}` }} />
-            ))}
-          </div>
-          <div style={{ maxWidth: 1126, display: "flex", flexDirection: "column", gap: 4 }}>
-            {Array.from({ length: 5 }, (_, i) => (
-              <div key={i} className="neo-skeleton" style={{ height: 34, border: `3px solid ${color.ink}` }} />
-            ))}
-          </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 24, maxWidth: 1126 }}>
+          <SkeletonTable rows={7} columns={4} />
+          <SkeletonTable rows={5} columns={5} />
         </div>
       )}
 

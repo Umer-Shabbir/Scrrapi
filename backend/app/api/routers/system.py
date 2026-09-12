@@ -97,12 +97,14 @@ def _celery_worker_stats() -> tuple[dict, list[dict]]:
     rows = []
     now = datetime.utcnow()
     for hostname in stats:
-        rows.append({
-            "hostname": hostname,
-            "activeTasks": len(active.get(hostname, [])),
-            "lastHeartbeat": now.isoformat(),
-            "online": True,
-        })
+        rows.append(
+            {
+                "hostname": hostname,
+                "activeTasks": len(active.get(hostname, [])),
+                "lastHeartbeat": now.isoformat(),
+                "online": True,
+            }
+        )
     return {"status": "up"}, rows
 
 
@@ -127,16 +129,22 @@ def system_health(
     # that to the ones already on the broker (dispatched_at set); WAITING
     # narrows it to the ones that aren't (count_waiting, also excludes
     # paused/cancelled jobs -- see app.workers.dispatch's docstring for why).
-    queued = db.scalar(
-        select(func.count()).select_from(JobTarget).where(JobTarget.status == "queued")
-    ) or 0
-    dispatched = db.scalar(
-        select(func.count()).select_from(JobTarget)
-        .where(JobTarget.status == "queued", JobTarget.dispatched_at.is_not(None))
-    ) or 0
-    running = db.scalar(
-        select(func.count()).select_from(JobTarget).where(JobTarget.status == "running")
-    ) or 0
+    queued = (
+        db.scalar(select(func.count()).select_from(JobTarget).where(JobTarget.status == "queued"))
+        or 0
+    )
+    dispatched = (
+        db.scalar(
+            select(func.count())
+            .select_from(JobTarget)
+            .where(JobTarget.status == "queued", JobTarget.dispatched_at.is_not(None))
+        )
+        or 0
+    )
+    running = (
+        db.scalar(select(func.count()).select_from(JobTarget).where(JobTarget.status == "running"))
+        or 0
+    )
     waiting = count_waiting(db)
 
     geo_seed = {

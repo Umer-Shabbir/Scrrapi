@@ -12,24 +12,25 @@ Nullable -- every job started by a person has no schedule behind it.
 
 Run against the app DB only: `alembic -x target=app upgrade app@head`.
 """
+
 import sqlalchemy as sa
 from alembic import op
 
-revision = 'a3d6e9b1c847'
-down_revision = 'f8a1c3e70b56'
+revision = "a3d6e9b1c847"
+down_revision = "f8a1c3e70b56"
 branch_labels = None
 depends_on = None
 
 
 def upgrade() -> None:
-    op.add_column('jobs', sa.Column('schedule_id', sa.Uuid(), nullable=True))
+    op.add_column("jobs", sa.Column("schedule_id", sa.Uuid(), nullable=True))
     op.create_foreign_key(
-        'fk_jobs_schedule_id_schedules', 'jobs', 'schedules', ['schedule_id'], ['id']
+        "fk_jobs_schedule_id_schedules", "jobs", "schedules", ["schedule_id"], ["id"]
     )
-    op.create_index(op.f('ix_jobs_schedule_id'), 'jobs', ['schedule_id'])
+    op.create_index(op.f("ix_jobs_schedule_id"), "jobs", ["schedule_id"])
 
 
 def downgrade() -> None:
-    op.drop_index(op.f('ix_jobs_schedule_id'), table_name='jobs')
-    op.drop_constraint('fk_jobs_schedule_id_schedules', 'jobs', type_='foreignkey')
-    op.drop_column('jobs', 'schedule_id')
+    op.drop_index(op.f("ix_jobs_schedule_id"), table_name="jobs")
+    op.drop_constraint("fk_jobs_schedule_id_schedules", "jobs", type_="foreignkey")
+    op.drop_column("jobs", "schedule_id")

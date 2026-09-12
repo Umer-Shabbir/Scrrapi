@@ -114,11 +114,17 @@ def create_proxy(
         select(Proxy).where(Proxy.host == payload.host, Proxy.port == payload.port)
     ).scalar_one_or_none()
     if existing is not None:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="proxy already in the pool")
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="proxy already in the pool"
+        )
 
     proxy = Proxy(
-        host=payload.host, port=payload.port, protocol=payload.protocol,
-        username=payload.username, password=payload.password, country=payload.country,
+        host=payload.host,
+        port=payload.port,
+        protocol=payload.protocol,
+        username=payload.username,
+        password=payload.password,
+        country=payload.country,
     )
     db.add(proxy)
     db.commit()
@@ -142,10 +148,16 @@ def bulk_create_proxies(
             skipped += 1
             continue
         existing_pairs.add((entry.host, entry.port))
-        db.add(Proxy(
-            host=entry.host, port=entry.port, protocol=entry.protocol,
-            username=entry.username, password=entry.password, country=entry.country,
-        ))
+        db.add(
+            Proxy(
+                host=entry.host,
+                port=entry.port,
+                protocol=entry.protocol,
+                username=entry.username,
+                password=entry.password,
+                country=entry.country,
+            )
+        )
         created += 1
 
     db.commit()
@@ -180,8 +192,12 @@ def test_proxy(
     latency_ms = int((time.monotonic() - started) * 1000)
 
     record_proxy_outcome(
-        db, proxy.host, proxy.port, "success" if ok else "failure",
-        latency_ms=latency_ms, consecutive_blocks={},
+        db,
+        proxy.host,
+        proxy.port,
+        "success" if ok else "failure",
+        latency_ms=latency_ms,
+        consecutive_blocks={},
     )
     db.refresh(proxy)
 

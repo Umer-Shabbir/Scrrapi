@@ -13,6 +13,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import NeoButton from "../components/neo/NeoButton";
 import NeoCheckbox from "../components/neo/NeoCheckbox";
 import InlineWarning from "../components/neo/InlineWarning";
+import { SkeletonCard } from "../components/neo/Skeleton";
 import { api, ApiError } from "../api/client";
 import { color, font } from "../theme/neobrutalist";
 import type { IntegrationCard, IntegrationProvider, WebhookConfig, WebhookSecretResponse } from "../types";
@@ -129,13 +130,7 @@ function CardGridSkeleton() {
   return (
     <div className="neo-responsive-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, maxWidth: 1126 }}>
       {Array.from({ length: 6 }, (_, i) => (
-        <div key={i} style={{ background: color.white, border: `3px solid ${color.ink}`, height: 168, padding: 16, position: "relative" }}>
-          <div className="neo-skeleton" style={{ position: "absolute", left: 13, top: 13, width: 120, height: 18 }} />
-          <div className="neo-skeleton" style={{ position: "absolute", left: "auto", right: 13, top: 13, width: 80, height: 18 }} />
-          <div className="neo-skeleton" style={{ position: "absolute", left: 13, top: 39, width: 280, height: 15 }} />
-          <div className="neo-skeleton" style={{ position: "absolute", left: 13, top: 62, width: 160, height: 14 }} />
-          <div className="neo-skeleton" style={{ position: "absolute", left: 13, top: 109, width: 100, height: 40, border: `2px solid ${color.ink}` }} />
-        </div>
+        <SkeletonCard key={i} height={168} />
       ))}
     </div>
   );
@@ -175,20 +170,9 @@ function IntegrationsList() {
         </div>
       )}
 
-      {cardsQuery.data && cardsQuery.data.every((c) => c.status !== "connected") && (
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16, padding: "80px 0" }}>
-          <div style={{ width: 64, height: 64, background: color.yellow, border: `3px solid ${color.ink}`, transform: "rotate(6deg)" }} />
-          <h2 style={{ margin: 0, fontFamily: font.head, fontSize: 32, color: color.ink }}>NO INTEGRATIONS CONNECTED</h2>
-          <p style={{ margin: 0, fontFamily: font.body, fontSize: 13, color: color.ink60, textAlign: "center", maxWidth: 400 }}>
-            Send job results and events to the tools your team already uses.
-          </p>
-          <NeoButton variant="primary" onClick={() => navigate("/integrations/webhooks")}>
-            Connect a tool
-          </NeoButton>
-        </div>
-      )}
+      
 
-      {cardsQuery.data && cardsQuery.data.some((c) => c.status === "connected") && (
+      {cardsQuery.data && (
         <div className="neo-responsive-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, maxWidth: 1126 }}>
           {cardsQuery.data.map((card, i) => (
             <IntegrationCardTile key={card.provider} card={card} onConfigure={(p) => navigate(`/integrations/${p}`)} rowIndex={i} />
@@ -282,7 +266,9 @@ function WebhookConfigPanel() {
     return (
       <div>
         {header}
-        <div className="neo-skeleton" style={{ height: 400, maxWidth: 700 }} />
+        <div style={{ maxWidth: 700 }}>
+          <SkeletonCard height={400} />
+        </div>
       </div>
     );
   }
@@ -332,7 +318,7 @@ function WebhookConfigPanel() {
           {config.availableEvents.map((key) => (
             <div key={key} style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <NeoCheckbox checked={effectiveEvents.includes(key)} onChange={() => toggleEvent(key)} />
-              <span style={{ fontFamily: font.body, fontWeight: 500, fontSize: 12.5, color: color.ink }}>
+              <span onClick={() => toggleEvent(key)} style={{ fontFamily: font.body, fontWeight: 500, fontSize: 12.5, color: color.ink, cursor: "pointer" }}>
                 {EVENT_LABEL[key] ?? key}
               </span>
             </div>
@@ -344,8 +330,12 @@ function WebhookConfigPanel() {
             SIGNING SECRET
           </p>
           <div style={{ background: color.sand, border: `3px solid ${color.ink}`, padding: "10px 12px", display: "flex", gap: 10, alignItems: "center" }}>
-            <span style={{ fontFamily: font.mono, fontSize: 12, color: color.ink, wordBreak: "break-all" }}>
-              {revealedSecret ?? config.signingSecretMasked ?? "Not generated yet — Save to create one"}
+            <span style={{ fontSize: 12, color: color.ink, wordBreak: "break-all" }}>
+              {revealedSecret ?? config.signingSecretMasked ? (
+                <span style={{ fontFamily: font.mono }}>{revealedSecret ?? config.signingSecretMasked}</span>
+              ) : (
+                <span style={{ fontFamily: font.body, fontStyle: "italic", color: color.ink60 }}>Not generated yet — Save to create one</span>
+              )}
             </span>
             <div style={{ flex: 1 }} />
             <button

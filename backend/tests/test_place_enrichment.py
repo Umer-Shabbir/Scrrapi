@@ -14,9 +14,7 @@ DEEP_BUDGET = CrawlBudget(max_pages=5, max_depth=2, total_timeout_s=10.0)
 async def test_enrich_place_data_validates_existing_website_and_mines_email() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.host == "joesplumbing.com":
-            return httpx.Response(
-                200, text='<a href="mailto:owner@joesplumbing.com">Email</a>'
-            )
+            return httpx.Response(200, text='<a href="mailto:owner@joesplumbing.com">Email</a>')
         return httpx.Response(200, text="ok")
 
     place = {"name": "Joe's Plumbing", "website": "joesplumbing.com", "phone": "555-1234"}
@@ -117,9 +115,7 @@ def _deep_handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(404)
     path = request.url.path
     if path in DEEP_SITE:
-        return httpx.Response(
-            200, text=DEEP_SITE[path], headers={"content-type": "text/html"}
-        )
+        return httpx.Response(200, text=DEEP_SITE[path], headers={"content-type": "text/html"})
     return httpx.Response(404)
 
 
@@ -175,3 +171,38 @@ async def test_shallow_run_does_not_crawl_beyond_the_home_page() -> None:
     assert "/contact" not in requested
     # Nothing on the home page, and no crawl to find the contact page's address.
     assert result["email"] is None
+
+
+async def test_enrich_place_data_depth_capabilities() -> None:
+    html = """<html><body>
+        <h1>Joe's Plumbing</h1>
+        <p>Founder & CEO: Joe Schmoe</p>
+        <p>Direct Mobile: (512) 555-0999</p>
+        <a href="mailto:[EMAIL_REDACTED]">Email</a>
+    </body></html>"""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, text=html)
+
+    place = {
+        "name": "Joe's Plumbing",
+        "website": "https://joesplumbing.com",
+        "phone": "(512) 555-0100",
+        "reviews": [
+            "Great service, Joe was very prompt and affordable!",
+            "Fast same day repair, highly recommended.",
+        ],
+        "reviews_count": 25,
+    }
+
+    async with httpx.AsyncClient(transport=_transport(handler)) as client:
+        result = await enrich_place_data(place, client=client)
+
+    assert result["decision_maker"] == "Joe Schmoe (Founder & CEO)"
+    assert "(512) 555-0999" in result["mobile_phone"]
+    assert result["sentiment_label"] == "Positive"
+    assert result["sentiment_score"] is not None and result["sentiment_score"] >= 0.7
+    assert (
+        "Fast response & punctual" in result["positive_highlights"]
+        or "Fair & affordable pricing" in result["positive_highlights"]
+    )

@@ -15,14 +15,15 @@ stay `not_connected` until a real OAuth/API-key integration is built.
 
 Run against the app DB only: `alembic -x target=app upgrade app@head`.
 """
+
 import uuid
 from datetime import datetime
 
 import sqlalchemy as sa
 from alembic import op
 
-revision = 'f4b7d2c891a3'
-down_revision = 'e91c4a6d0f57'
+revision = "f4b7d2c891a3"
+down_revision = "e91c4a6d0f57"
 branch_labels = None
 depends_on = None
 
@@ -31,37 +32,37 @@ PROVIDERS = ("webhooks", "slack", "hubspot", "pipedrive", "rest", "sheets")
 
 def upgrade() -> None:
     op.create_table(
-        'integration_connections',
-        sa.Column('id', sa.Uuid(), primary_key=True),
-        sa.Column('provider', sa.String(length=20), nullable=False),
-        sa.Column('status', sa.String(length=20), nullable=False, server_default='not_connected'),
-        sa.Column('config', sa.JSON(), nullable=False),
-        sa.Column('last_event_at', sa.DateTime(), nullable=True),
-        sa.Column('last_event_summary', sa.String(length=255), nullable=True),
-        sa.Column('updated_at', sa.DateTime(), nullable=False),
+        "integration_connections",
+        sa.Column("id", sa.Uuid(), primary_key=True),
+        sa.Column("provider", sa.String(length=20), nullable=False),
+        sa.Column("status", sa.String(length=20), nullable=False, server_default="not_connected"),
+        sa.Column("config", sa.JSON(), nullable=False),
+        sa.Column("last_event_at", sa.DateTime(), nullable=True),
+        sa.Column("last_event_summary", sa.String(length=255), nullable=True),
+        sa.Column("updated_at", sa.DateTime(), nullable=False),
     )
     op.create_unique_constraint(
-        'uq_integration_connections_provider', 'integration_connections', ['provider']
+        "uq_integration_connections_provider", "integration_connections", ["provider"]
     )
 
     connections = sa.table(
-        'integration_connections',
-        sa.column('id', sa.Uuid()),
-        sa.column('provider', sa.String()),
-        sa.column('status', sa.String()),
-        sa.column('config', sa.JSON()),
-        sa.column('updated_at', sa.DateTime()),
+        "integration_connections",
+        sa.column("id", sa.Uuid()),
+        sa.column("provider", sa.String()),
+        sa.column("status", sa.String()),
+        sa.column("config", sa.JSON()),
+        sa.column("updated_at", sa.DateTime()),
     )
     now = datetime.utcnow()
     op.bulk_insert(
         connections,
         [
             {
-                'id': uuid.uuid4(),
-                'provider': provider,
-                'status': 'not_connected',
-                'config': {},
-                'updated_at': now,
+                "id": uuid.uuid4(),
+                "provider": provider,
+                "status": "not_connected",
+                "config": {},
+                "updated_at": now,
             }
             for provider in PROVIDERS
         ],
@@ -69,5 +70,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_constraint('uq_integration_connections_provider', 'integration_connections', type_='unique')
-    op.drop_table('integration_connections')
+    op.drop_constraint(
+        "uq_integration_connections_provider", "integration_connections", type_="unique"
+    )
+    op.drop_table("integration_connections")

@@ -36,6 +36,7 @@ from app.core.logging import log_context
 from app.core.runtime_settings import (
     get_deep_crawl_enabled,
     get_deep_crawl_max_pages,
+    get_email_verification_mode,
     get_export_retention_days,
     get_results_retention_days,
     get_retry_ceiling,
@@ -420,6 +421,7 @@ def scrape_place(
             # runtime setting, and someone turning it off because a job is
             # crawling too slowly expects the places still queued to obey.
             deep_crawl = get_deep_crawl_enabled(db)
+            email_verification_mode = get_email_verification_mode(db)
             crawl_budget = (
                 budget_from_settings(get_deep_crawl_max_pages(db)) if deep_crawl else None
             )
@@ -433,13 +435,18 @@ def scrape_place(
                         deep_crawl=deep_crawl,
                         budget=crawl_budget,
                         on_crawl=_announce_crawl,
+                        email_verification_mode=email_verification_mode,
                     )
                 )
             except Exception as exc:
                 if retries_left(self, get_retry_ceiling(db)):
                     raise _retry(
-                        self, exc, job_id=job_id, targetId=target_id,
-                        placeUrl=place_url, stage="place",
+                        self,
+                        exc,
+                        job_id=job_id,
+                        targetId=target_id,
+                        placeUrl=place_url,
+                        stage="place",
                     ) from exc
                 logger.error("place scrape failed, retries exhausted", exc_info=exc)
                 publish_job_event(
@@ -486,18 +493,23 @@ def scrape_place(
             # place_enrichment._merge), so whether the *raw* detail scrape --
             # captured before enrichment ran, via _announce_detail -- already
             # had a value is the whole test for where the final one came from.
-            phone_source = "maps listing" if raw_detail.get("phone") else (
-                "site crawl" if place.get("phone") else None
+            phone_source = (
+                "maps listing"
+                if raw_detail.get("phone")
+                else ("site crawl" if place.get("phone") else None)
             )
-            email_source = "maps listing" if raw_detail.get("email") else (
-                "site crawl" if place.get("email") else None
+            email_source = (
+                "maps listing"
+                if raw_detail.get("email")
+                else ("site crawl" if place.get("email") else None)
             )
 
             # Off unless Settings > Enrichment turns it on (app.core.runtime_settings) --
             # previously ran unconditionally for every place with a website.
             tech_stack = (
                 asyncio.run(fetch_tech_stack(place.get("website")))
-                if get_tech_fingerprint_enabled(db) else []
+                if get_tech_fingerprint_enabled(db)
+                else []
             )
 
             place_key = compute_place_key(
@@ -522,7 +534,9 @@ def scrape_place(
             # a second code path for that case alone. See
             # app.scraping.common.suppression for the exact-match rules.
             provisional = Result(
-                website=place.get("website"), email=place.get("email"), place_key=place_key,
+                website=place.get("website"),
+                email=place.get("email"),
+                place_key=place_key,
             )
             suppression_entries = db.execute(
                 select(SuppressionEntry.kind, SuppressionEntry.value)
@@ -530,7 +544,10 @@ def scrape_place(
             if suppression_entries and result_is_suppressed(provisional, list(suppression_entries)):
                 logger.info("place matched a suppression rule, discarding")
                 publish_job_event(
-                    job_id, "place_skipped", targetId=target_id, placeUrl=place_url,
+                    job_id,
+                    "place_skipped",
+                    targetId=target_id,
+                    placeUrl=place_url,
                     reason="suppressed",
                 )
                 _finish_place(db, job_id, target_id)
@@ -547,6 +564,12 @@ def scrape_place(
                 zip_code=place.get("zip_code") or area.get("zip_code"),
                 phone=place.get("phone"),
                 email=place.get("email"),
+                mobile_phone=place.get("mobile_phone"),
+                decision_maker=place.get("decision_maker"),
+                reviews_count=place.get("reviews_count"),
+                sentiment_score=place.get("sentiment_score"),
+                sentiment_label=place.get("sentiment_label"),
+                pain_points=place.get("pain_points_summary"),
                 website=place.get("website"),
                 latitude=place.get("latitude"),
                 longitude=place.get("longitude"),
@@ -568,6 +591,9 @@ def scrape_place(
                     "emails": len(place.get("emails") or []),
                     "phones": len(place.get("phones") or []),
                     "has_website": bool(place.get("website")),
+                    "has_decision_maker": bool(place.get("decision_maker")),
+                    "has_mobile": bool(place.get("mobile_phone")),
+                    "sentiment": place.get("sentiment_label"),
                     "networks": sorted(socials),
                     "crawled_pages": place.get("crawled_pages") or 0,
                 },
@@ -587,6 +613,12 @@ def scrape_place(
                     "zipCode": result.zip_code,
                     "phone": result.phone,
                     "email": result.email,
+                    "mobilePhone": result.mobile_phone,
+                    "decisionMaker": result.decision_maker,
+                    "reviewsCount": result.reviews_count,
+                    "sentimentScore": result.sentiment_score,
+                    "sentimentLabel": result.sentiment_label,
+                    "painPoints": result.pain_points,
                     "website": result.website,
                     "latitude": result.latitude,
                     "longitude": result.longitude,
@@ -610,6 +642,7 @@ async def _scrape_and_enrich(
     deep_crawl: bool = False,
     budget=None,
     on_crawl=None,
+    email_verification_mode: str = "off",
 ) -> dict:
     """Detail scrape, then website/email enrichment.
 
@@ -627,7 +660,11 @@ async def _scrape_and_enrich(
     if on_detail is not None:
         on_detail(dict(place))
     return await enrich_place_data(
-        place, deep_crawl=deep_crawl, budget=budget, on_crawl=on_crawl
+        dict(place),
+        deep_crawl=deep_crawl,
+        budget=budget,
+        on_crawl=on_crawl,
+        email_verification_mode=email_verification_mode,
     )
 
 
@@ -812,9 +849,7 @@ def _refresh_job_status(db, job_id: uuid.UUID) -> None:
     results_count = (
         db.scalar(select(func.count()).select_from(Result).where(Result.job_id == job_id)) or 0
     )
-    publish_job_event(
-        str(job_id), "job_done", status=job.status, resultsCount=results_count
-    )
+    publish_job_event(str(job_id), "job_done", status=job.status, resultsCount=results_count)
 
 
 @celery_app.task(bind=True, max_retries=settings.task_max_retries_export)
@@ -873,7 +908,9 @@ def export_job(self, export_id: str) -> str:
                 export.external_url = result_path
             else:
                 export.file_path = result_path
-                export.size_bytes = os.path.getsize(result_path) if os.path.exists(result_path) else None
+                export.size_bytes = (
+                    os.path.getsize(result_path) if os.path.exists(result_path) else None
+                )
             export.status = "done"
             export.generated_at = now
             export.expires_at = now + timedelta(days=get_export_retention_days(db))
@@ -906,13 +943,17 @@ def purge_expired_exports() -> dict:
     purged = 0
     try:
         now = datetime.utcnow()
-        expired = db.execute(
-            select(Export).where(
-                Export.expires_at.is_not(None),
-                Export.expires_at <= now,
-                Export.file_path.is_not(None),
+        expired = (
+            db.execute(
+                select(Export).where(
+                    Export.expires_at.is_not(None),
+                    Export.expires_at <= now,
+                    Export.file_path.is_not(None),
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
 
         for export in expired:
             if export.file_path and os.path.exists(export.file_path):
@@ -949,9 +990,7 @@ def purge_expired_results() -> dict:
         # ForeignKeyViolation risk as the whole-job delete in workers.control.
         db.execute(
             delete(ResultHistory).where(
-                ResultHistory.result_id.in_(
-                    select(Result.id).where(Result.scraped_at < cutoff)
-                )
+                ResultHistory.result_id.in_(select(Result.id).where(Result.scraped_at < cutoff))
             )
         )
         purged = db.execute(delete(Result).where(Result.scraped_at < cutoff)).rowcount or 0
@@ -979,13 +1018,17 @@ def dispatch_due_schedules() -> dict:
     misfired = 0
     try:
         now = datetime.utcnow()
-        due = db.execute(
-            select(Schedule).where(
-                Schedule.enabled.is_(True),
-                Schedule.next_run_at.is_not(None),
-                Schedule.next_run_at <= now,
+        due = (
+            db.execute(
+                select(Schedule).where(
+                    Schedule.enabled.is_(True),
+                    Schedule.next_run_at.is_not(None),
+                    Schedule.next_run_at <= now,
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
 
         for schedule in due:
             grace_cutoff = now - timedelta(minutes=MISFIRE_GRACE_MINUTES)

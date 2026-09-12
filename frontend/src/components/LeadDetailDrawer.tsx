@@ -39,7 +39,7 @@ function Section({ label, children }: { label: string; children: React.ReactNode
 }
 
 function Rule() {
-  return <div style={{ width: "100%", height: 1, background: color.rule }} />;
+  return <div style={{ width: "100%", height: 3, background: color.ink }} />;
 }
 
 /** Score Dial: a ring rendered from the score fraction, ink border per spec
@@ -70,7 +70,7 @@ function ScoreDial({ value }: { value: number }) {
  * on sand). Glyph prefix per cross-cutting #7 (badges were missing theirs). */
 function LeadStatusBadge({ status: leadStatus }: { status: LeadStatus }) {
   const FILL: Record<LeadStatus, string> = { claimed: color.blue, open: color.sand, closed: color.sand };
-  const GLYPH: Record<LeadStatus, string> = { claimed: "✓", open: "•", closed: "✕" };
+  const GLYPH: Record<LeadStatus, string> = { claimed: "✓", open: "●", closed: "✕" };
   return (
     <span
       style={{
@@ -135,8 +135,27 @@ function IdentityBlock({ lead }: { lead: LeadDetail }) {
             : "No score signals found yet — no phone, email, website, rating, or social profile on this lead."}
         </p>
       </div>
-      <div style={{ display: "flex", gap: 8, marginTop: 20 }}>
+      <div style={{ display: "flex", gap: 8, marginTop: 8, alignItems: "center", flexWrap: "wrap" }}>
         <LeadStatusBadge status={lead.status} />
+        {lead.decisionMaker && (
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              height: 22,
+              padding: "0 10px",
+              border: `2px solid ${color.ink}`,
+              background: color.yellow,
+              fontFamily: font.body,
+              fontWeight: 700,
+              fontSize: 10,
+              color: color.ink,
+              textTransform: "uppercase",
+            }}
+          >
+            👤 {lead.decisionMaker}
+          </span>
+        )}
       </div>
     </div>
   );
@@ -144,8 +163,9 @@ function IdentityBlock({ lead }: { lead: LeadDetail }) {
 
 function ContactBlock({ lead }: { lead: LeadDetail }) {
   const phones = lead.phone ? lead.phone.split(",").map((p) => p.trim()).filter(Boolean) : [];
+  const mobiles = lead.mobilePhone ? lead.mobilePhone.split(",").map((p) => p.trim()).filter(Boolean) : [];
   const emails = lead.email ? lead.email.split(",").map((p) => p.trim()).filter(Boolean) : [];
-  if (phones.length === 0 && emails.length === 0) {
+  if (phones.length === 0 && mobiles.length === 0 && emails.length === 0) {
     return (
       <Section label="Contact">
         <p style={{ margin: 0, fontFamily: font.body, fontSize: 12, color: color.ink60 }}>No phone or email found.</p>
@@ -155,17 +175,25 @@ function ContactBlock({ lead }: { lead: LeadDetail }) {
   return (
     <Section label="Contact">
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        {mobiles.map((mobile) => (
+          <ContactRow
+            key={`mobile-${mobile}`}
+            value={mobile}
+            meta="Direct Mobile / Personal Line"
+            onCopy={mobile}
+          />
+        ))}
         {phones.map((phone) => (
           <ContactRow
-            key={phone}
+            key={`phone-${phone}`}
             value={phone}
-            meta={lead.phoneSource ? `Found via ${lead.phoneSource}` : "Source unknown"}
+            meta={lead.phoneSource ? `Found via ${lead.phoneSource}` : "Store / Main Line"}
             onCopy={phone}
           />
         ))}
         {emails.map((email) => (
           <ContactRow
-            key={email}
+            key={`email-${email}`}
             value={email}
             meta={lead.emailSource ? `Found via ${lead.emailSource}` : "Source unknown"}
             onCopy={email}
@@ -208,6 +236,102 @@ function WebBlock({ lead }: { lead: LeadDetail }) {
               {tech}
             </span>
           ))}
+        </div>
+      )}
+    </Section>
+  );
+}
+
+function ReviewsAndSentimentBlock({ lead }: { lead: LeadDetail }) {
+  if (lead.rating == null && lead.reviewsCount == null && !lead.sentimentLabel && !lead.painPoints) {
+    return null;
+  }
+
+  const sentimentColor =
+    lead.sentimentLabel === "Positive"
+      ? color.green
+      : lead.sentimentLabel === "Negative"
+      ? color.pink
+      : lead.sentimentLabel === "Mixed"
+      ? color.yellow
+      : color.sand;
+
+  const painPointsList = lead.painPoints
+    ? lead.painPoints.split(",").map((p) => p.trim()).filter(Boolean)
+    : [];
+
+  return (
+    <Section label="Reviews & Customer Sentiment">
+      <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", marginBottom: 8 }}>
+        {lead.rating != null && (
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 4,
+              padding: "4px 8px",
+              border: `2px solid ${color.ink}`,
+              background: color.sand,
+              fontFamily: font.body,
+              fontWeight: 700,
+              fontSize: 12,
+              color: color.ink,
+            }}
+          >
+            ★ {lead.rating.toFixed(1)}
+            {lead.reviewsCount != null && (
+              <span style={{ fontWeight: 400, color: color.ink60, marginLeft: 2 }}>
+                ({lead.reviewsCount} reviews)
+              </span>
+            )}
+          </span>
+        )}
+        {lead.sentimentLabel && (
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              height: 24,
+              padding: "0 10px",
+              border: `2px solid ${color.ink}`,
+              background: sentimentColor,
+              fontFamily: font.body,
+              fontWeight: 700,
+              fontSize: 11,
+              color: color.ink,
+              textTransform: "uppercase",
+            }}
+          >
+            {lead.sentimentLabel === "Positive" ? "✓" : lead.sentimentLabel === "Negative" ? "✕" : "●"}{" "}
+            {lead.sentimentLabel} Sentiment
+            {lead.sentimentScore != null && ` (${Math.round(lead.sentimentScore * 100)}%)`}
+          </span>
+        )}
+      </div>
+
+      {painPointsList.length > 0 && (
+        <div style={{ marginTop: 10 }}>
+          <p style={{ margin: "0 0 6px", fontFamily: font.body, fontWeight: 700, fontSize: 11, color: color.pink, textTransform: "uppercase" }}>
+            ⚠️ Extracted Customer Pain Points:
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            {painPointsList.map((point) => (
+              <div
+                key={point}
+                style={{
+                  padding: "6px 10px",
+                  border: `1px solid ${color.pink}`,
+                  background: color.white,
+                  fontFamily: font.body,
+                  fontSize: 12,
+                  color: color.ink,
+                  borderLeft: `4px solid ${color.pink}`,
+                }}
+              >
+                {point}
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </Section>
@@ -304,11 +428,11 @@ function DrawerShell({ title, onClose, children }: { title: string; onClose: () 
           flexDirection: "column",
         }}
       >
-        <div style={{ background: color.ink, color: color.white, padding: "14px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
+        <div style={{ borderBottom: `3px solid ${color.ink}`, background: color.ink, color: color.white, padding: "14px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
           <span style={{ fontFamily: font.body, fontWeight: 700, fontSize: 14, letterSpacing: "0.28px", textTransform: "uppercase" }}>{title}</span>
           <button type="button" onClick={onClose} style={{ border: "none", background: "transparent", color: color.white, cursor: "pointer", fontSize: 14, padding: 0 }}>✕</button>
         </div>
-        <div style={{ flex: 1, overflowY: "auto", padding: 20, display: "flex", flexDirection: "column", gap: 16 }}>
+        <div style={{ flex: 1, overflowY: "auto", padding: 20, display: "flex", flexDirection: "column", gap: 8 }}>
           {children}
         </div>
       </div>
@@ -391,61 +515,61 @@ export default function LeadDetailDrawer({ jobId, leadId, onClose }: Props) {
       <Rule />
       <LocationBlock lead={lead} />
       <Rule />
+      <ReviewsAndSentimentBlock lead={lead} />
+      <Rule />
       <ProvenanceBlock lead={lead} />
       <Rule />
       <HistoryBlock lead={lead} />
 
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: "auto", paddingTop: 8 }}>
-        <NeoButton variant="ghost" size="sm" onClick={() => {
-          const vcard = [
-            "BEGIN:VCARD",
-            "VERSION:3.0",
-            `FN:${lead.name ?? ""}`,
-            lead.phone ? `TEL:${lead.phone.split(",")[0].trim()}` : "",
-            lead.email ? `EMAIL:${lead.email.split(",")[0].trim()}` : "",
-            lead.website ? `URL:${lead.website}` : "",
-            "END:VCARD",
-          ].filter(Boolean).join("\n");
-          const blob = new Blob([vcard], { type: "text/vcard" });
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement("a");
-          link.href = url;
-          link.download = `${lead.name ?? "lead"}.vcf`;
-          document.body.appendChild(link);
-          link.click();
-          link.remove();
-          URL.revokeObjectURL(url);
-        }}>
-          Copy vCard
-        </NeoButton>
-        {/* SUPPRESS is destructive (removes the lead from view) -- visually
-            separated from the routine TAG/CLAIM actions per the screenlist's
-            bug note that these read identically today. */}
-        <NeoButton
-          variant="destructive"
-          size="sm"
-          loading={updateLead.isPending}
-          onClick={() => updateLead.mutate({ suppressed: !lead.suppressed })}
-        >
-          {lead.suppressed ? "Unsuppress" : "Suppress"}
-        </NeoButton>
-        <NeoButton
-          variant="ghost"
-          size="sm"
-          onClick={() => {
-            const next = window.prompt("Tags (comma-separated)", lead.tags.join(", "));
-            if (next === null) return;
-            updateLead.mutate({ tags: next.split(",").map((t) => t.trim()).filter(Boolean) });
-          }}
-        >
-          Tag
-        </NeoButton>
-        {/* Same precedent as the Results page's own Push to CRM button --
-            Integrations isn't built, so this stays disabled rather than
-            wired to an endpoint that doesn't exist. */}
-        <NeoButton variant="primary" size="sm" disabled>
-          Push to CRM
-        </NeoButton>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: "auto", paddingTop: 8, justifyContent: "space-between", alignItems: "center" }}>
+        <div>
+          <NeoButton
+            variant="destructive"
+            size="sm"
+            loading={updateLead.isPending}
+            onClick={() => updateLead.mutate({ suppressed: !lead.suppressed })}
+          >
+            {lead.suppressed ? "Unsuppress" : "Suppress"}
+          </NeoButton>
+        </div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <NeoButton variant="ghost" size="sm" onClick={() => {
+            const vcard = [
+              "BEGIN:VCARD",
+              "VERSION:3.0",
+              `FN:${lead.name ?? ""}`,
+              lead.phone ? `TEL:${lead.phone.split(",")[0].trim()}` : "",
+              lead.email ? `EMAIL:${lead.email.split(",")[0].trim()}` : "",
+              lead.website ? `URL:${lead.website}` : "",
+              "END:VCARD",
+            ].filter(Boolean).join("\n");
+            const blob = new Blob([vcard], { type: "text/vcard" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `${lead.name ?? "lead"}.vcf`;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(url);
+          }}>
+            Copy vCard
+          </NeoButton>
+          <NeoButton
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              const next = window.prompt("Tags (comma-separated)", lead.tags.join(", "));
+              if (next === null) return;
+              updateLead.mutate({ tags: next.split(",").map((t) => t.trim()).filter(Boolean) });
+            }}
+          >
+            Tag
+          </NeoButton>
+          <NeoButton variant="primary" size="sm" disabled>
+            Push to CRM
+          </NeoButton>
+        </div>
       </div>
     </DrawerShell>
   );

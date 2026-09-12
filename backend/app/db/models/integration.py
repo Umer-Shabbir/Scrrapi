@@ -34,8 +34,11 @@ class IntegrationConnection(AppBase):
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     provider: Mapped[str] = mapped_column(String(20), unique=True)
-    status: Mapped[str] = mapped_column(String(20), default="not_connected")  # connected | not_connected
+    # connected | not_connected
+    status: Mapped[str] = mapped_column(String(20), default="not_connected")
     config: Mapped[dict] = mapped_column(JSON, default=dict)
     last_event_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     last_event_summary: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )

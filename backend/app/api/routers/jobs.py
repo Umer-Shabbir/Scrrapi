@@ -275,10 +275,7 @@ def _progress_by_job(db: Session, job_ids: list[uuid.UUID]) -> dict[uuid.UUID, f
         .where(JobTarget.job_id.in_(job_ids))
         .group_by(JobTarget.job_id)
     ).all()
-    return {
-        job_id: (done / found if found else 0.0)
-        for job_id, done, found in rows
-    }
+    return {job_id: (done / found if found else 0.0) for job_id, done, found in rows}
 
 
 def _lead_counts_by_job(db: Session, job_ids: list[uuid.UUID]) -> dict[uuid.UUID, int]:
@@ -363,12 +360,16 @@ def get_activity(
     not the proxy/schedule events the Figma mock shows (those subsystems have
     no backing store either).
     """
-    rows = db.execute(
-        select(Job)
-        .where(Job.created_by == user.id, Job.status != "queued")
-        .order_by(Job.updated_at.desc())
-        .limit(limit)
-    ).scalars().all()
+    rows = (
+        db.execute(
+            select(Job)
+            .where(Job.created_by == user.id, Job.status != "queued")
+            .order_by(Job.updated_at.desc())
+            .limit(limit)
+        )
+        .scalars()
+        .all()
+    )
 
     return {"items": [_activity_entry(job) for job in rows]}
 
@@ -443,11 +444,15 @@ def get_job_result(
 ) -> dict:
     job = _get_owned_job(db, job_id, user)
     result = _get_owned_result(db, job.id, result_id)
-    history = db.execute(
-        select(ResultHistory)
-        .where(ResultHistory.result_id == result.id)
-        .order_by(ResultHistory.changed_at.desc())
-    ).scalars().all()
+    history = (
+        db.execute(
+            select(ResultHistory)
+            .where(ResultHistory.result_id == result.id)
+            .order_by(ResultHistory.changed_at.desc())
+        )
+        .scalars()
+        .all()
+    )
     return _result_dict(result, history=history, score_weights=get_score_weights(db))
 
 
@@ -480,11 +485,15 @@ def update_job_result(
         result.suppressed = payload.suppressed
 
     db.commit()
-    history = db.execute(
-        select(ResultHistory)
-        .where(ResultHistory.result_id == result.id)
-        .order_by(ResultHistory.changed_at.desc())
-    ).scalars().all()
+    history = (
+        db.execute(
+            select(ResultHistory)
+            .where(ResultHistory.result_id == result.id)
+            .order_by(ResultHistory.changed_at.desc())
+        )
+        .scalars()
+        .all()
+    )
     return _result_dict(result, history=history, score_weights=get_score_weights(db))
 
 
@@ -755,6 +764,12 @@ def _result_dict(
         # site crawler found, appended to what Maps listed.
         "phone": result.phone,
         "email": result.email,
+        "mobilePhone": result.mobile_phone,
+        "decisionMaker": result.decision_maker,
+        "reviewsCount": result.reviews_count,
+        "sentimentScore": result.sentiment_score,
+        "sentimentLabel": result.sentiment_label,
+        "painPoints": result.pain_points,
         "website": result.website,
         "latitude": result.latitude,
         "longitude": result.longitude,

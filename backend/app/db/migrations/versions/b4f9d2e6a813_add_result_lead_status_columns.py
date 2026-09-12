@@ -36,54 +36,55 @@ Backs the Lead Detail screen end to end:
 
 Run against the app DB only: `alembic -x target=app upgrade app@head`.
 """
+
 import sqlalchemy as sa
 from alembic import op
 
-revision = 'b4f9d2e6a813'
-down_revision = 'a3d6e9b1c847'
+revision = "b4f9d2e6a813"
+down_revision = "a3d6e9b1c847"
 branch_labels = None
 depends_on = None
 
 
 def upgrade() -> None:
     op.add_column(
-        'results',
-        sa.Column('status', sa.String(length=20), nullable=False, server_default='open'),
+        "results",
+        sa.Column("status", sa.String(length=20), nullable=False, server_default="open"),
     )
-    op.add_column('results', sa.Column('tags', sa.String(length=500), nullable=True))
+    op.add_column("results", sa.Column("tags", sa.String(length=500), nullable=True))
     op.add_column(
-        'results',
-        sa.Column('suppressed', sa.Boolean(), nullable=False, server_default=sa.false()),
+        "results",
+        sa.Column("suppressed", sa.Boolean(), nullable=False, server_default=sa.false()),
     )
-    op.add_column('results', sa.Column('rating', sa.Float(), nullable=True))
-    op.add_column('results', sa.Column('phone_source', sa.String(length=40), nullable=True))
-    op.add_column('results', sa.Column('email_source', sa.String(length=40), nullable=True))
-    op.add_column('results', sa.Column('tech_stack', sa.String(length=255), nullable=True))
-    op.add_column('results', sa.Column('place_key', sa.String(length=64), nullable=True))
-    op.create_index(op.f('ix_results_place_key'), 'results', ['place_key'])
+    op.add_column("results", sa.Column("rating", sa.Float(), nullable=True))
+    op.add_column("results", sa.Column("phone_source", sa.String(length=40), nullable=True))
+    op.add_column("results", sa.Column("email_source", sa.String(length=40), nullable=True))
+    op.add_column("results", sa.Column("tech_stack", sa.String(length=255), nullable=True))
+    op.add_column("results", sa.Column("place_key", sa.String(length=64), nullable=True))
+    op.create_index(op.f("ix_results_place_key"), "results", ["place_key"])
 
     op.create_table(
-        'result_history',
-        sa.Column('id', sa.Uuid(), primary_key=True),
-        sa.Column('result_id', sa.Uuid(), sa.ForeignKey('results.id'), nullable=False),
-        sa.Column('field', sa.String(length=40), nullable=False),
-        sa.Column('old_value', sa.String(length=500), nullable=True),
-        sa.Column('new_value', sa.String(length=500), nullable=True),
-        sa.Column('changed_at', sa.DateTime(), nullable=False),
+        "result_history",
+        sa.Column("id", sa.Uuid(), primary_key=True),
+        sa.Column("result_id", sa.Uuid(), sa.ForeignKey("results.id"), nullable=False),
+        sa.Column("field", sa.String(length=40), nullable=False),
+        sa.Column("old_value", sa.String(length=500), nullable=True),
+        sa.Column("new_value", sa.String(length=500), nullable=True),
+        sa.Column("changed_at", sa.DateTime(), nullable=False),
     )
-    op.create_index(op.f('ix_result_history_result_id'), 'result_history', ['result_id'])
+    op.create_index(op.f("ix_result_history_result_id"), "result_history", ["result_id"])
 
 
 def downgrade() -> None:
-    op.drop_index(op.f('ix_result_history_result_id'), table_name='result_history')
-    op.drop_table('result_history')
+    op.drop_index(op.f("ix_result_history_result_id"), table_name="result_history")
+    op.drop_table("result_history")
 
-    op.drop_index(op.f('ix_results_place_key'), table_name='results')
-    op.drop_column('results', 'place_key')
-    op.drop_column('results', 'tech_stack')
-    op.drop_column('results', 'email_source')
-    op.drop_column('results', 'phone_source')
-    op.drop_column('results', 'rating')
-    op.drop_column('results', 'suppressed')
-    op.drop_column('results', 'tags')
-    op.drop_column('results', 'status')
+    op.drop_index(op.f("ix_results_place_key"), table_name="results")
+    op.drop_column("results", "place_key")
+    op.drop_column("results", "tech_stack")
+    op.drop_column("results", "email_source")
+    op.drop_column("results", "phone_source")
+    op.drop_column("results", "rating")
+    op.drop_column("results", "suppressed")
+    op.drop_column("results", "tags")
+    op.drop_column("results", "status")

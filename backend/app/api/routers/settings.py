@@ -92,10 +92,16 @@ settings = get_settings()
 logger = logging.getLogger(__name__)
 
 _AUDITED_SETTINGS_KEYS = (
-    "concurrentTargets", "deepCrawlEnabled", "deepCrawlMaxPages",
-    "cooldownBaseS", "retryCeiling", "techFingerprintEnabled",
-    "emailVerificationMode", "scoreWeights",
-    "resultsRetentionDays", "exportRetentionDays",
+    "concurrentTargets",
+    "deepCrawlEnabled",
+    "deepCrawlMaxPages",
+    "cooldownBaseS",
+    "retryCeiling",
+    "techFingerprintEnabled",
+    "emailVerificationMode",
+    "scoreWeights",
+    "resultsRetentionDays",
+    "exportRetentionDays",
 )
 
 
@@ -150,9 +156,7 @@ def update_settings(
     if payload.deep_crawl_enabled is not None:
         changed["deep_crawl_enabled"] = set_deep_crawl_enabled(db, payload.deep_crawl_enabled)
     if payload.deep_crawl_max_pages is not None:
-        changed["deep_crawl_max_pages"] = set_deep_crawl_max_pages(
-            db, payload.deep_crawl_max_pages
-        )
+        changed["deep_crawl_max_pages"] = set_deep_crawl_max_pages(db, payload.deep_crawl_max_pages)
     if payload.cooldown_base_s is not None:
         changed["cooldown_base_s"] = set_cooldown_base_s(db, payload.cooldown_base_s)
     if payload.retry_ceiling is not None:
@@ -200,7 +204,9 @@ def update_settings(
     if changed:
         after = _settings_dict(db)
         log_audit_event(
-            db, actor_email=user.email, action="settings.updated",
+            db,
+            actor_email=user.email,
+            action="settings.updated",
             ip_address=client_ip(request),
             before_after={
                 "before": {k: before[k] for k in _AUDITED_SETTINGS_KEYS},
@@ -224,7 +230,9 @@ def reset_settings(
     reset_to_defaults(db)
     after = _settings_dict(db)
     log_audit_event(
-        db, actor_email=user.email, action="settings.reset",
+        db,
+        actor_email=user.email,
+        action="settings.reset",
         ip_address=client_ip(request),
         before_after={
             "before": {k: before[k] for k in _AUDITED_SETTINGS_KEYS},
@@ -267,7 +275,9 @@ def purge_results(
     db.execute(delete(Result))
 
     log_audit_event(
-        db, actor_email=user.email, action="settings.purge_results",
+        db,
+        actor_email=user.email,
+        action="settings.purge_results",
         ip_address=client_ip(request),
         before_after={"deleted": {"results": result_count, "exports": export_count}},
     )

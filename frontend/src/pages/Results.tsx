@@ -57,40 +57,79 @@ function Metric({ label, value }: { label: string; value: string }) {
 
 function TargetsTable({ targets }: { targets: JobDetail["targets"] }) {
   return (
-    <div style={{ overflowX: "auto" }}>
-      <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 700 }}>
-        <thead>
-          <tr style={{ background: color.sand }}>
-            {["KEYWORD", "ZIP", "LOCATION", "PLACES", "STATUS"].map((h) => (
-              <th key={h} style={{ textAlign: "left", padding: "10px 12px", fontFamily: font.body, fontWeight: 700, fontSize: "10.5px", letterSpacing: "0.35px", color: color.ink }}>{h}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {targets.map((target, i) => (
-            <tr
-              key={target.id}
-              className="neo-row-enter"
-              style={{ borderTop: `1px solid ${color.rule}`, ["--neo-delay" as string]: `${Math.min(i, 12) * 24}ms` }}
-            >
-              <td style={{ padding: "10px 12px", fontFamily: font.body, fontSize: 13, color: color.ink }}>{target.keyword}</td>
-              <td style={{ padding: "10px 12px", fontFamily: font.mono, fontSize: 12, color: color.ink }}>{target.zipCode ?? "—"}</td>
-              <td style={{ padding: "10px 12px", fontFamily: font.body, fontSize: 13, color: color.ink }}>
-                {[target.city, target.region].filter(Boolean).join(", ") || target.locationLabel}
-              </td>
-              <td style={{ padding: "10px 12px", fontFamily: font.mono, fontSize: 12, color: color.ink }}>
-                {target.placesFound > 0 ? `${target.placesDone}/${target.placesFound}` : "—"}
-              </td>
-              <td style={{ padding: "10px 12px" }}>
-                <NeoStatusBadge
-                  status={target.status === "queued" && !target.dispatched ? "queued" : target.status}
-                />
-              </td>
+    <>
+      <div className="neo-responsive-table" style={{ overflowX: "auto" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 700 }}>
+          <thead>
+            <tr style={{ background: color.sand }}>
+              {["KEYWORD", "ZIP", "LOCATION", "PLACES", "STATUS"].map((h) => (
+                <th key={h} style={{ textAlign: "left", padding: "10px 12px", fontFamily: font.body, fontWeight: 700, fontSize: "10.5px", letterSpacing: "0.35px", color: color.ink }}>{h}</th>
+              ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            {targets.map((target, i) => (
+              <tr
+                key={target.id}
+                className="neo-row-enter"
+                style={{ borderTop: `1px solid ${color.rule}`, ["--neo-delay" as string]: `${Math.min(i, 12) * 24}ms` }}
+              >
+                <td style={{ padding: "10px 12px", fontFamily: font.body, fontSize: 13, color: color.ink }}>{target.keyword}</td>
+                <td style={{ padding: "10px 12px", fontFamily: font.mono, fontSize: 12, color: color.ink }}>{target.zipCode ?? "—"}</td>
+                <td style={{ padding: "10px 12px", fontFamily: font.body, fontSize: 13, color: color.ink }}>
+                  {[target.city, target.region].filter(Boolean).join(", ") || target.locationLabel}
+                </td>
+                <td style={{ padding: "10px 12px", fontFamily: font.mono, fontSize: 12, color: color.ink }}>
+                  {target.placesFound > 0 ? `${target.placesDone}/${target.placesFound}` : "—"}
+                </td>
+                <td style={{ padding: "10px 12px" }}>
+                  <NeoStatusBadge
+                    status={target.status === "queued" && !target.dispatched ? "queued" : target.status}
+                  />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="neo-responsive-cards">
+        {targets.map((target, i) => (
+          <div
+            key={target.id}
+            className="neo-row-enter"
+            style={{
+              border: `3px solid ${color.ink}`,
+              background: color.white,
+              padding: 12,
+              display: "flex",
+              flexDirection: "column",
+              gap: 8,
+              ["--neo-delay" as string]: `${Math.min(i, 12) * 24}ms`,
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+              <div>
+                <p style={{ margin: 0, fontFamily: font.body, fontWeight: 700, fontSize: 13, color: color.ink }}>
+                  {target.keyword}
+                </p>
+                <p style={{ margin: "2px 0 0", fontFamily: font.body, fontSize: 12, color: color.ink60 }}>
+                  {[target.city, target.region].filter(Boolean).join(", ") || target.locationLabel}
+                  {target.zipCode ? ` (${target.zipCode})` : ""}
+                </p>
+              </div>
+              <NeoStatusBadge
+                status={target.status === "queued" && !target.dispatched ? "queued" : target.status}
+              />
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontFamily: font.mono, fontSize: 12, color: color.ink }}>
+              <span style={{ color: color.ink60, fontFamily: font.body }}>Places:</span>
+              <span>{target.placesFound > 0 ? `${target.placesDone}/${target.placesFound}` : "—"}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
   );
 }
 

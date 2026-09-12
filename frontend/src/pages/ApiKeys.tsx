@@ -22,8 +22,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import NeoButton from "../components/neo/NeoButton";
 import NeoCheckbox from "../components/neo/NeoCheckbox";
 import InlineWarning from "../components/neo/InlineWarning";
+import { SkeletonTable } from "../components/neo/Skeleton";
 import { api, ApiError } from "../api/client";
-import { color, font, shadow } from "../theme/neobrutalist";
+import { color, font } from "../theme/neobrutalist";
 import type { ApiKeyRecord, ApiKeyScope, ApiKeysResponse, CreateApiKeyResponse } from "../types";
 
 const SCOPE_OPTIONS: { scope: ApiKeyScope; label: string }[] = [
@@ -98,82 +99,117 @@ function KeysTable({
   ];
 
   return (
-    <div style={{ background: color.white, border: `3px solid ${color.ink}`, maxWidth: 1126, overflowX: "auto" }}>
-      <div style={{ display: "flex", background: color.sand, borderBottom: `3px solid ${color.ink}`, height: 36 }}>
-        {columns.map(([h, w]) => (
-          <div key={h} style={{ display: "flex", alignItems: "center", padding: "0 10px", width: w, flexShrink: 0 }}>
-            <span style={{ fontFamily: font.body, fontWeight: 700, fontSize: 10, letterSpacing: "0.2px", color: color.ink }}>
-              {h}
-            </span>
+    <>
+      <div className="neo-responsive-table" style={{ background: color.white, border: `3px solid ${color.ink}`, maxWidth: 1126, overflowX: "auto" }}>
+        <div style={{ display: "flex", background: color.sand, borderBottom: `3px solid ${color.ink}`, height: 36 }}>
+          {columns.map(([h, w]) => (
+            <div key={h} style={{ display: "flex", alignItems: "center", padding: "0 10px", width: w, flexShrink: 0 }}>
+              <span style={{ fontFamily: font.body, fontWeight: 700, fontSize: 10, letterSpacing: "0.2px", color: color.ink }}>
+                {h}
+              </span>
+            </div>
+          ))}
+        </div>
+        {keys.map((k, i) => (
+          <div
+            key={k.id}
+            className="neo-row-enter"
+            style={{ display: "flex", minHeight: 44, borderBottom: `3px solid ${color.rule}`, alignItems: "center", ["--neo-delay" as string]: `${Math.min(i, 12) * 24}ms` }}
+          >
+            <div style={{ padding: "10px", width: 160, flexShrink: 0 }}>
+              <span style={{ fontFamily: font.body, fontWeight: 500, fontSize: 12, color: color.ink }}>{k.label}</span>
+            </div>
+            <div style={{ padding: "10px", width: 120, flexShrink: 0 }}>
+              <span style={{ fontFamily: font.mono, fontSize: 11, color: color.ink }}>{k.prefix}</span>
+            </div>
+            <div style={{ padding: "10px", width: 220, flexShrink: 0 }}>
+              <span style={{ fontFamily: font.body, fontWeight: 500, fontSize: 12, color: color.ink }}>
+                {k.scopes.map((s) => SCOPE_LABEL[s]).join(" · ") || "—"}
+              </span>
+            </div>
+            <div style={{ padding: "10px", width: 110, flexShrink: 0 }}>
+              <span style={{ fontFamily: font.mono, fontSize: 11, color: color.ink }}>{formatDate(k.createdAt)}</span>
+            </div>
+            <div style={{ padding: "10px", width: 110, flexShrink: 0 }}>
+              <span style={{ fontFamily: font.mono, fontSize: 11, color: color.ink }}>{lastUsedLabel(k.lastUsedAt)}</span>
+            </div>
+            <div style={{ padding: "10px", width: 110, flexShrink: 0 }}>
+              <span style={{ fontFamily: font.mono, fontSize: 11, color: color.ink }}>{formatDate(k.expiresAt)}</span>
+            </div>
+            <div style={{ padding: "10px", width: 140, flexShrink: 0 }}>
+              <Sparkline daily={k.usageDaily} />
+            </div>
+            <div style={{ padding: "10px", width: 156, flexShrink: 0 }}>
+              <button
+                type="button"
+                onClick={() => onRevoke(k)}
+                disabled={pendingId === k.id}
+                style={{
+                  border: "none",
+                  background: "transparent",
+                  cursor: pendingId === k.id ? "default" : "pointer",
+                  padding: 0,
+                  fontFamily: font.body,
+                  fontWeight: 500,
+                  fontSize: 12,
+                  color: color.pink,
+                }}
+              >
+                REVOKE
+              </button>
+            </div>
           </div>
         ))}
       </div>
-      {keys.map((k, i) => (
-        <div
-          key={k.id}
-          className="neo-row-enter"
-          style={{ display: "flex", minHeight: 44, borderBottom: `3px solid ${color.rule}`, alignItems: "center", ["--neo-delay" as string]: `${Math.min(i, 12) * 24}ms` }}
-        >
-          <div style={{ padding: "10px", width: 160, flexShrink: 0 }}>
-            <span style={{ fontFamily: font.body, fontWeight: 500, fontSize: 12, color: color.ink }}>{k.label}</span>
-          </div>
-          <div style={{ padding: "10px", width: 120, flexShrink: 0 }}>
-            <span style={{ fontFamily: font.mono, fontSize: 11, color: color.ink }}>{k.prefix}</span>
-          </div>
-          <div style={{ padding: "10px", width: 220, flexShrink: 0 }}>
-            <span style={{ fontFamily: font.body, fontWeight: 500, fontSize: 12, color: color.ink }}>
-              {k.scopes.map((s) => SCOPE_LABEL[s]).join(" · ") || "—"}
-            </span>
-          </div>
-          <div style={{ padding: "10px", width: 110, flexShrink: 0 }}>
-            <span style={{ fontFamily: font.mono, fontSize: 11, color: color.ink }}>{formatDate(k.createdAt)}</span>
-          </div>
-          <div style={{ padding: "10px", width: 110, flexShrink: 0 }}>
-            <span style={{ fontFamily: font.mono, fontSize: 11, color: color.ink }}>{lastUsedLabel(k.lastUsedAt)}</span>
-          </div>
-          <div style={{ padding: "10px", width: 110, flexShrink: 0 }}>
-            <span style={{ fontFamily: font.mono, fontSize: 11, color: color.ink }}>{formatDate(k.expiresAt)}</span>
-          </div>
-          <div style={{ padding: "10px", width: 140, flexShrink: 0 }}>
-            <Sparkline daily={k.usageDaily} />
-          </div>
-          <div style={{ padding: "10px", width: 156, flexShrink: 0 }}>
-            <button
-              type="button"
-              onClick={() => onRevoke(k)}
-              disabled={pendingId === k.id}
-              style={{
-                border: "none",
-                background: "transparent",
-                cursor: pendingId === k.id ? "default" : "pointer",
-                padding: 0,
-                fontFamily: font.body,
-                fontWeight: 500,
-                fontSize: 12,
-                color: color.pink,
-              }}
-            >
-              REVOKE
-            </button>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
 
-function TableSkeleton() {
-  return (
-    <div style={{ maxWidth: 1126, display: "flex", flexDirection: "column", border: `3px solid ${color.ink}` }}>
-      <div className="neo-skeleton" style={{ height: 36, borderBottom: `3px solid ${color.ink}` }} />
-      {Array.from({ length: 4 }, (_, i) => (
-        <div key={i} style={{ height: 44, borderBottom: i < 3 ? `3px solid ${color.rule}` : "none", display: "flex", alignItems: "center", gap: 16, padding: "0 10px" }}>
-          {[160, 120, 220, 110, 110, 110, 140].map((w, j) => (
-            <div key={j} className="neo-skeleton" style={{ width: w - 20, height: 12 }} />
-          ))}
-        </div>
-      ))}
-    </div>
+      <div className="neo-responsive-cards">
+        {keys.map((k, i) => (
+          <div
+            key={k.id}
+            className="neo-row-enter"
+            style={{
+              border: `3px solid ${color.ink}`,
+              background: color.white,
+              padding: 12,
+              display: "flex",
+              flexDirection: "column",
+              gap: 8,
+              ["--neo-delay" as string]: `${Math.min(i, 12) * 24}ms`,
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+              <div>
+                <span style={{ fontFamily: font.body, fontWeight: 700, fontSize: 14, color: color.ink }}>{k.label}</span>
+                <p style={{ margin: "2px 0 0", fontFamily: font.mono, fontSize: 11, color: color.ink60 }}>{k.prefix}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => onRevoke(k)}
+                disabled={pendingId === k.id}
+                style={{
+                  border: "none",
+                  background: "transparent",
+                  cursor: pendingId === k.id ? "default" : "pointer",
+                  padding: 0,
+                  fontFamily: font.body,
+                  fontWeight: 700,
+                  fontSize: 12,
+                  color: color.pink,
+                }}
+              >
+                REVOKE
+              </button>
+            </div>
+            <div style={{ fontFamily: font.body, fontSize: 12, color: color.ink }}>
+              Scopes: <span style={{ color: color.ink60 }}>{k.scopes.map((s) => SCOPE_LABEL[s]).join(", ") || "—"}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontFamily: font.body, fontSize: 11.5, color: color.ink60, borderTop: `1px solid ${color.rule}`, paddingTop: 6 }}>
+              <span>Created: {formatDate(k.createdAt)} · Last used: {lastUsedLabel(k.lastUsedAt)}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
   );
 }
 
@@ -206,8 +242,8 @@ function CreateKeyModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(17,17,17,0.7)", display: "grid", placeItems: "center", zIndex: 1000 }}>
-      <div style={{ background: color.white, border: `3px solid ${color.ink}`, boxShadow: shadow.lg, width: 640, display: "flex", flexDirection: "column" }}>
-        <div style={{ background: color.ink, color: color.white, padding: "14px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div style={{ background: color.white, border: `3px solid ${color.ink}`, boxShadow: "10px 10px 0px 0px #111", width: 640, display: "flex", flexDirection: "column" }}>
+        <div style={{ borderBottom: `3px solid ${color.ink}`, background: color.ink, color: color.white, padding: "14px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span style={{ fontFamily: font.body, fontWeight: 700, fontSize: 14, letterSpacing: "0.28px", textTransform: "uppercase" }}>
             {result ? "Key created" : "Create key"}
           </span>
@@ -340,7 +376,7 @@ export default function ApiKeys() {
         </NeoButton>
       </div>
 
-      {keysQuery.isLoading && <TableSkeleton />}
+      {keysQuery.isLoading && <div style={{ maxWidth: 1126 }}><SkeletonTable rows={4} columns={8} /></div>}
 
       {keysQuery.isError && (
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16, padding: "48px 0" }}>

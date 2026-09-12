@@ -82,7 +82,7 @@ function ConfirmModal({
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(17,17,17,0.7)", display: "grid", placeItems: "center", zIndex: 1000 }}>
       <div style={{ background: color.white, border: `3px solid ${color.ink}`, boxShadow: "10px 10px 0px 0px #111", width: 440 }}>
-        <div style={{ background: color.pink, color: color.white, padding: "14px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ background: color.pink, color: color.white, borderBottom: `3px solid ${color.ink}`, padding: "14px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span style={{ fontFamily: font.body, fontWeight: 700, fontSize: 14, letterSpacing: "0.28px", textTransform: "uppercase" }}>
             Suppress this {noun}
           </span>
@@ -155,7 +155,7 @@ function BulkModal({
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(17,17,17,0.7)", display: "grid", placeItems: "center", zIndex: 1000 }}>
       <div style={{ background: color.white, border: `3px solid ${color.ink}`, boxShadow: "10px 10px 0px 0px #111", width: 520 }}>
-        <div style={{ background: color.ink, color: color.white, padding: "14px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ background: color.ink, borderBottom: `3px solid ${color.ink}`, color: color.white, padding: "14px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span style={{ fontFamily: font.body, fontWeight: 700, fontSize: 14, letterSpacing: "0.28px", textTransform: "uppercase" }}>
             Bulk paste / upload
           </span>
@@ -344,50 +344,97 @@ export default function Suppression() {
       )}
 
       {listQuery.data && entries.length > 0 && (
-        <div style={{ border: `3px solid ${color.ink}`, background: color.white, width: "100%", maxWidth: 1126, overflowX: "auto" }}>
-          <div style={{ display: "flex", background: color.sand, borderBottom: `3px solid ${color.ink}` }}>
-            {[tab.fieldLabel.toUpperCase(), "REASON", "ADDED BY", "ADDED AT", "ACTIONS"].map((h, i) => (
-              <div key={h} style={{ padding: "0 12px", height: 36, display: "flex", alignItems: "center", minWidth: i === 1 ? 300 : 150, flex: i === 4 ? 1 : undefined }}>
-                <span style={{ fontFamily: font.body, fontWeight: 700, fontSize: 10.5, letterSpacing: "0.315px", color: color.ink }}>{h}</span>
+        <>
+          <div className="neo-responsive-table" style={{ border: `3px solid ${color.ink}`, background: color.white, width: "100%", maxWidth: 1126, overflowX: "auto" }}>
+            <div style={{ display: "flex", background: color.sand, borderBottom: `3px solid ${color.ink}` }}>
+              {[tab.fieldLabel.toUpperCase(), "REASON", "ADDED BY", "ADDED AT", "ACTIONS"].map((h, i) => (
+                <div key={h} style={{ padding: "0 12px", height: 36, display: "flex", alignItems: "center", minWidth: i === 1 ? 300 : 150, flex: i === 4 ? 1 : undefined }}>
+                  <span style={{ fontFamily: font.body, fontWeight: 700, fontSize: 10.5, letterSpacing: "0.315px", color: color.ink }}>{h}</span>
+                </div>
+              ))}
+            </div>
+            {entries.map((entry, i) => (
+              <div
+                key={entry.id}
+                className="neo-row-enter"
+                style={{ display: "flex", borderBottom: `3px solid ${color.rule}`, ["--neo-delay" as string]: `${Math.min(i, 12) * 24}ms` }}
+              >
+                <div style={{ padding: "0 12px", height: 40, display: "flex", alignItems: "center", minWidth: 150 }}>
+                  <span style={{ fontFamily: font.mono, fontSize: 12, color: color.ink }}>{entry.value}</span>
+                </div>
+                <div style={{ padding: "0 12px", height: 40, display: "flex", alignItems: "center", minWidth: 300 }}>
+                  <span style={{ fontFamily: font.body, fontWeight: 500, fontSize: 12.5, color: color.ink }}>{entry.reason ?? "—"}</span>
+                </div>
+                <div style={{ padding: "0 12px", height: 40, display: "flex", alignItems: "center", minWidth: 150 }}>
+                  <span style={{ fontFamily: font.body, fontWeight: 500, fontSize: 12.5, color: color.ink }}>{entry.createdBy}</span>
+                </div>
+                <div style={{ padding: "0 12px", height: 40, display: "flex", alignItems: "center", minWidth: 150 }}>
+                  <span style={{ fontFamily: font.body, fontWeight: 500, fontSize: 12.5, color: color.ink }}>
+                    {new Date(entry.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
+                <div style={{ padding: "0 12px", height: 40, display: "flex", alignItems: "center", gap: 8, flex: 1 }}>
+                  <span title="Results currently matching this rule -- should stay at 0 once enforcement has caught up" style={{ fontFamily: font.body, fontWeight: 500, fontSize: 10.5, color: color.ink60 }}>
+                    {entry.rowCount} rows
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => deleteEntry.mutate(entry.id)}
+                    disabled={deleteEntry.isPending}
+                    style={{ border: "none", background: "transparent", cursor: "pointer", padding: 0, fontFamily: font.body, fontWeight: 500, fontSize: 12.5, color: color.blue }}
+                  >
+                    REMOVE
+                  </button>
+                </div>
               </div>
             ))}
           </div>
-          {entries.map((entry, i) => (
-            <div
-              key={entry.id}
-              className="neo-row-enter"
-              style={{ display: "flex", borderBottom: `3px solid ${color.rule}`, ["--neo-delay" as string]: `${Math.min(i, 12) * 24}ms` }}
-            >
-              <div style={{ padding: "0 12px", height: 40, display: "flex", alignItems: "center", minWidth: 150 }}>
-                <span style={{ fontFamily: font.mono, fontSize: 12, color: color.ink }}>{entry.value}</span>
+
+          <div className="neo-responsive-cards">
+            {entries.map((entry, i) => (
+              <div
+                key={entry.id}
+                className="neo-row-enter"
+                style={{
+                  border: `3px solid ${color.ink}`,
+                  background: color.white,
+                  padding: 12,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 8,
+                  ["--neo-delay" as string]: `${Math.min(i, 12) * 24}ms`,
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                  <span style={{ fontFamily: font.mono, fontWeight: 700, fontSize: 13, color: color.ink, wordBreak: "break-all" }}>
+                    {entry.value}
+                  </span>
+                  <span style={{ fontFamily: font.body, fontSize: 11, color: color.ink60, flexShrink: 0 }}>
+                    {entry.rowCount} rows
+                  </span>
+                </div>
+                {entry.reason && (
+                  <p style={{ margin: 0, fontFamily: font.body, fontSize: 12, color: color.ink60 }}>
+                    {entry.reason}
+                  </p>
+                )}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: `1px solid ${color.rule}`, paddingTop: 6 }}>
+                  <span style={{ fontFamily: font.body, fontSize: 11, color: color.ink60 }}>
+                    {entry.createdBy} · {new Date(entry.createdAt).toLocaleDateString()}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => deleteEntry.mutate(entry.id)}
+                    disabled={deleteEntry.isPending}
+                    style={{ border: "none", background: "transparent", cursor: "pointer", padding: 0, fontFamily: font.body, fontWeight: 700, fontSize: 11.5, color: color.pink }}
+                  >
+                    REMOVE
+                  </button>
+                </div>
               </div>
-              <div style={{ padding: "0 12px", height: 40, display: "flex", alignItems: "center", minWidth: 300 }}>
-                <span style={{ fontFamily: font.body, fontWeight: 500, fontSize: 12.5, color: color.ink }}>{entry.reason ?? "—"}</span>
-              </div>
-              <div style={{ padding: "0 12px", height: 40, display: "flex", alignItems: "center", minWidth: 150 }}>
-                <span style={{ fontFamily: font.body, fontWeight: 500, fontSize: 12.5, color: color.ink }}>{entry.createdBy}</span>
-              </div>
-              <div style={{ padding: "0 12px", height: 40, display: "flex", alignItems: "center", minWidth: 150 }}>
-                <span style={{ fontFamily: font.body, fontWeight: 500, fontSize: 12.5, color: color.ink }}>
-                  {new Date(entry.createdAt).toLocaleDateString()}
-                </span>
-              </div>
-              <div style={{ padding: "0 12px", height: 40, display: "flex", alignItems: "center", gap: 8, flex: 1 }}>
-                <span title="Results currently matching this rule -- should stay at 0 once enforcement has caught up" style={{ fontFamily: font.body, fontWeight: 500, fontSize: 10.5, color: color.ink60 }}>
-                  {entry.rowCount} rows
-                </span>
-                <button
-                  type="button"
-                  onClick={() => deleteEntry.mutate(entry.id)}
-                  disabled={deleteEntry.isPending}
-                  style={{ border: "none", background: "transparent", cursor: "pointer", padding: 0, fontFamily: font.body, fontWeight: 500, fontSize: 12.5, color: color.blue }}
-                >
-                  REMOVE
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </>
       )}
 
       {confirmTarget && (

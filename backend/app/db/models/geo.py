@@ -15,6 +15,8 @@ class Country(GeoBase):
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     code: Mapped[str] = mapped_column(String(2), unique=True, index=True)
     name: Mapped[str] = mapped_column(String(255), index=True)
+    latitude: Mapped[float | None] = mapped_column(index=True)
+    longitude: Mapped[float | None] = mapped_column(index=True)
 
 
 class Region(GeoBase):
@@ -23,6 +25,8 @@ class Region(GeoBase):
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     country_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("country.id"), index=True)
     name: Mapped[str] = mapped_column(String(255), index=True)
+    latitude: Mapped[float | None] = mapped_column(index=True)
+    longitude: Mapped[float | None] = mapped_column(index=True)
 
 
 class City(GeoBase):
@@ -31,6 +35,8 @@ class City(GeoBase):
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     region_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("region.id"), index=True)
     name: Mapped[str] = mapped_column(String(255), index=True)
+    latitude: Mapped[float | None] = mapped_column(index=True)
+    longitude: Mapped[float | None] = mapped_column(index=True)
 
 
 class ZipCode(GeoBase):
@@ -39,3 +45,5 @@ class ZipCode(GeoBase):
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     city_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("city.id"), index=True)
     code: Mapped[str] = mapped_column(String(20), index=True)
+    latitude: Mapped[float | None] = mapped_column(index=True)
+    longitude: Mapped[float | None] = mapped_column(index=True)

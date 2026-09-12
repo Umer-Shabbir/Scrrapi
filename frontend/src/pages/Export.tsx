@@ -24,6 +24,7 @@ import NeoButton from "../components/neo/NeoButton";
 import NeoCheckbox from "../components/neo/NeoCheckbox";
 import NeoRadio from "../components/neo/NeoRadio";
 import InlineWarning from "../components/neo/InlineWarning";
+import { SkeletonCard, SkeletonTable } from "../components/neo/Skeleton";
 import { api, ApiError } from "../api/client";
 import { color, font } from "../theme/neobrutalist";
 import { EXPORT_COLUMN_GROUPS } from "../types";
@@ -180,62 +181,115 @@ function ExportHistoryTable({
   const headers = ["FORMAT", "ROWS", "SIZE", "CREATED", "EXPIRES", "ACTIONS"];
 
   return (
-    <div style={{ border: `3px solid ${color.ink}`, background: color.white, width: "100%", maxWidth: 1126, overflowX: "auto" }}>
-      <div style={{ display: "flex", background: color.sand, borderBottom: `3px solid ${color.ink}` }}>
-        {headers.map((h) => (
-          <div key={h} style={{ padding: "0 12px", height: 36, display: "flex", alignItems: "center", minWidth: h === "ACTIONS" ? 180 : 100, flex: h === "ACTIONS" ? 1 : undefined }}>
-            <span style={{ fontFamily: font.body, fontWeight: 700, fontSize: 10.5, letterSpacing: "0.315px", color: color.ink }}>{h}</span>
+    <>
+      <div className="neo-responsive-table" style={{ border: `3px solid ${color.ink}`, background: color.white, width: "100%", maxWidth: 1126, overflowX: "auto" }}>
+        <div style={{ display: "flex", background: color.sand, borderBottom: `3px solid ${color.ink}` }}>
+          {headers.map((h) => (
+            <div key={h} style={{ padding: "0 12px", height: 36, display: "flex", alignItems: "center", minWidth: h === "ACTIONS" ? 180 : 100, flex: h === "ACTIONS" ? 1 : undefined }}>
+              <span style={{ fontFamily: font.body, fontWeight: 700, fontSize: 10.5, letterSpacing: "0.315px", color: color.ink }}>{h}</span>
+            </div>
+          ))}
+        </div>
+        {exports.map((record, i) => (
+          <div
+            key={record.id}
+            className="neo-row-enter"
+            style={{ display: "flex", borderBottom: `3px solid ${color.rule}`, ["--neo-delay" as string]: `${Math.min(i, 12) * 24}ms` }}
+          >
+            <div style={{ padding: "0 12px", height: 40, display: "flex", alignItems: "center", minWidth: 100 }}>
+              <span style={{ fontFamily: font.mono, fontSize: 12, color: color.ink, textTransform: "uppercase" }}>{record.format}</span>
+            </div>
+            <div style={{ padding: "0 12px", height: 40, display: "flex", alignItems: "center", minWidth: 100 }}>
+              <span style={{ fontFamily: font.mono, fontSize: 12, color: color.ink }}>{record.rowCount ?? "—"}</span>
+            </div>
+            <div style={{ padding: "0 12px", height: 40, display: "flex", alignItems: "center", minWidth: 100 }}>
+              <span style={{ fontFamily: font.mono, fontSize: 12, color: color.ink }}>{formatBytes(record.sizeBytes)}</span>
+            </div>
+            <div style={{ padding: "0 12px", height: 40, display: "flex", alignItems: "center", minWidth: 100 }}>
+              <span style={{ fontFamily: font.body, fontWeight: 500, fontSize: 12.5, color: color.ink }}>
+                {record.generatedAt ? relativeTime(record.generatedAt) : record.status}
+              </span>
+            </div>
+            <div style={{ padding: "0 12px", height: 40, display: "flex", alignItems: "center", minWidth: 100 }}>
+              <span style={{ fontFamily: font.body, fontWeight: 500, fontSize: 12.5, color: record.expired ? color.ink60 : color.ink }}>
+                {expiryLabel(record)}
+              </span>
+            </div>
+            <div style={{ padding: "0 12px", height: 40, display: "flex", alignItems: "center", gap: 8, minWidth: 180, flex: 1 }}>
+              {record.downloadUrl && !record.expired ? (
+                <button type="button" onClick={() => handleDownload(record)} style={{ border: "none", background: "transparent", cursor: "pointer", padding: 0, fontFamily: font.body, fontWeight: 500, fontSize: 12.5, color: color.blue }}>
+                  DOWNLOAD
+                </button>
+              ) : (
+                <span style={{ fontFamily: font.body, fontWeight: 500, fontSize: 12.5, color: color.ink60 }}>
+                  {record.status === "error" ? "FAILED" : record.expired ? "EXPIRED" : record.status.toUpperCase()}
+                </span>
+              )}
+              <span style={{ color: color.ink60 }}>·</span>
+              <button
+                type="button"
+                onClick={() => deleteExport.mutate(record.id)}
+                disabled={deleteExport.isPending}
+                style={{ border: "none", background: "transparent", cursor: "pointer", padding: 0, fontFamily: font.body, fontWeight: 500, fontSize: 12.5, color: color.blue }}
+              >
+                DELETE
+              </button>
+            </div>
           </div>
         ))}
       </div>
-      {exports.map((record, i) => (
-        <div
-          key={record.id}
-          className="neo-row-enter"
-          style={{ display: "flex", borderBottom: `3px solid ${color.rule}`, ["--neo-delay" as string]: `${Math.min(i, 12) * 24}ms` }}
-        >
-          <div style={{ padding: "0 12px", height: 40, display: "flex", alignItems: "center", minWidth: 100 }}>
-            <span style={{ fontFamily: font.mono, fontSize: 12, color: color.ink, textTransform: "uppercase" }}>{record.format}</span>
-          </div>
-          <div style={{ padding: "0 12px", height: 40, display: "flex", alignItems: "center", minWidth: 100 }}>
-            <span style={{ fontFamily: font.mono, fontSize: 12, color: color.ink }}>{record.rowCount ?? "—"}</span>
-          </div>
-          <div style={{ padding: "0 12px", height: 40, display: "flex", alignItems: "center", minWidth: 100 }}>
-            <span style={{ fontFamily: font.mono, fontSize: 12, color: color.ink }}>{formatBytes(record.sizeBytes)}</span>
-          </div>
-          <div style={{ padding: "0 12px", height: 40, display: "flex", alignItems: "center", minWidth: 100 }}>
-            <span style={{ fontFamily: font.body, fontWeight: 500, fontSize: 12.5, color: color.ink }}>
-              {record.generatedAt ? relativeTime(record.generatedAt) : record.status}
-            </span>
-          </div>
-          <div style={{ padding: "0 12px", height: 40, display: "flex", alignItems: "center", minWidth: 100 }}>
-            <span style={{ fontFamily: font.body, fontWeight: 500, fontSize: 12.5, color: record.expired ? color.ink60 : color.ink }}>
-              {expiryLabel(record)}
-            </span>
-          </div>
-          <div style={{ padding: "0 12px", height: 40, display: "flex", alignItems: "center", gap: 8, minWidth: 180, flex: 1 }}>
-            {record.downloadUrl && !record.expired ? (
-              <button type="button" onClick={() => handleDownload(record)} style={{ border: "none", background: "transparent", cursor: "pointer", padding: 0, fontFamily: font.body, fontWeight: 500, fontSize: 12.5, color: color.blue }}>
-                DOWNLOAD
-              </button>
-            ) : (
-              <span style={{ fontFamily: font.body, fontWeight: 500, fontSize: 12.5, color: color.ink60 }}>
-                {record.status === "error" ? "FAILED" : record.expired ? "EXPIRED" : record.status.toUpperCase()}
+
+      <div className="neo-responsive-cards">
+        {exports.map((record, i) => (
+          <div
+            key={record.id}
+            className="neo-row-enter"
+            style={{
+              border: `3px solid ${color.ink}`,
+              background: color.white,
+              padding: 12,
+              display: "flex",
+              flexDirection: "column",
+              gap: 8,
+              ["--neo-delay" as string]: `${Math.min(i, 12) * 24}ms`,
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+              <span style={{ fontFamily: font.mono, fontWeight: 700, fontSize: 14, color: color.ink, textTransform: "uppercase" }}>
+                {record.format}
               </span>
-            )}
-            <span style={{ color: color.ink60 }}>·</span>
-            <button
-              type="button"
-              onClick={() => deleteExport.mutate(record.id)}
-              disabled={deleteExport.isPending}
-              style={{ border: "none", background: "transparent", cursor: "pointer", padding: 0, fontFamily: font.body, fontWeight: 500, fontSize: 12.5, color: color.blue }}
-            >
-              DELETE
-            </button>
+              <span style={{ fontFamily: font.body, fontSize: 12, color: record.expired ? color.ink60 : color.ink }}>
+                {expiryLabel(record)}
+              </span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", fontFamily: font.body, fontSize: 12, color: color.ink60 }}>
+              <span>{record.rowCount ?? "—"} rows · {formatBytes(record.sizeBytes)}</span>
+              <span>{record.generatedAt ? relativeTime(record.generatedAt) : record.status}</span>
+            </div>
+            <div style={{ display: "flex", gap: 8, alignItems: "center", borderTop: `1px solid ${color.rule}`, paddingTop: 8 }}>
+              {record.downloadUrl && !record.expired ? (
+                <NeoButton variant="primary" size="sm" onClick={() => handleDownload(record)}>
+                  Download
+                </NeoButton>
+              ) : (
+                <span style={{ fontFamily: font.body, fontWeight: 500, fontSize: 12, color: color.ink60 }}>
+                  {record.status === "error" ? "FAILED" : record.expired ? "EXPIRED" : record.status.toUpperCase()}
+                </span>
+              )}
+              <div style={{ flex: 1 }} />
+              <NeoButton
+                variant="ghost"
+                size="sm"
+                onClick={() => deleteExport.mutate(record.id)}
+                disabled={deleteExport.isPending}
+              >
+                Delete
+              </NeoButton>
+            </div>
           </div>
-        </div>
-      ))}
-    </div>
+        ))}
+      </div>
+    </>
   );
 }
 
@@ -304,15 +358,36 @@ export default function ExportPage() {
   const running = job && LIVE_STATUSES.has(job.status);
   const generating = createExport.isPending || (activeExportQuery.data && !TERMINAL_EXPORT_STATUSES.has(activeExportQuery.data.status));
 
+  const header = (
+    <div>
+      <button
+        type="button"
+        onClick={() => navigate(`/results/${jobId}`)}
+        style={{ border: "none", background: "transparent", cursor: "pointer", padding: 0, fontFamily: font.body, fontWeight: 500, fontSize: 12, color: color.ink60, marginBottom: 8 }}
+      >
+        ← Results
+      </button>
+      <div className="neo-responsive-header" style={{ marginBottom: 24 }}>
+        <h1 style={{ margin: 0, fontFamily: font.head, fontSize: 24, color: color.ink }}>EXPORT</h1>
+        <p style={{ margin: "4px 0 0", fontFamily: font.body, fontWeight: 500, fontSize: 13, color: color.ink60 }}>
+          {jobQuery.data?.name ?? (jobId ? `Job #${jobId.slice(0, 8)}` : "—")}
+        </p>
+      </div>
+    </div>
+  );
+
   if (jobQuery.isLoading) {
     return (
-      <div>
-        <div className="neo-skeleton" style={{ height: 24, width: 320, marginBottom: 8 }} />
-        <div className="neo-skeleton" style={{ height: 14, width: 220, marginBottom: 32 }} />
-        <div className="neo-skeleton" style={{ height: 108, marginBottom: 24 }} />
-        <div style={{ display: "flex", gap: 16 }}>
-          <div className="neo-skeleton" style={{ height: 200, flex: 1 }} />
-          <div className="neo-skeleton" style={{ height: 200, flex: 1 }} />
+      <div style={{ maxWidth: 1126 }}>
+        {header}
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 24 }}>
+          <div style={{ width: 198 }}><SkeletonCard height={118} /></div>
+          <div style={{ width: 198 }}><SkeletonCard height={118} /></div>
+          <div style={{ width: 198 }}><SkeletonCard height={118} /></div>
+        </div>
+        <div className="neo-responsive-row" style={{ display: "flex", gap: 16, marginBottom: 24, flexWrap: "wrap" }}>
+          <div style={{ flex: 1, minWidth: 400 }}><SkeletonCard height={320} /></div>
+          <div style={{ flex: 1, minWidth: 400 }}><SkeletonCard height={200} /></div>
         </div>
       </div>
     );
@@ -325,16 +400,7 @@ export default function ExportPage() {
     // content area under it.
     return (
       <div>
-        <div style={{ marginBottom: 24 }}>
-          <button
-            type="button"
-            onClick={() => navigate(`/results/${jobId}`)}
-            style={{ border: "none", background: "transparent", cursor: "pointer", padding: 0, fontFamily: font.body, fontWeight: 500, fontSize: 12, color: color.ink60, marginBottom: 8 }}
-          >
-            ← Results
-          </button>
-          <h1 style={{ margin: 0, fontFamily: font.head, fontSize: 24, color: color.ink }}>EXPORT</h1>
-        </div>
+        {header}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: "80px 0" }}>
           <div style={{ width: 32, height: 32, background: color.pink, border: `3px solid ${color.ink}`, transform: "rotate(6deg)" }} />
           <h2 style={{ margin: 0, fontFamily: font.head, fontSize: 18, color: color.ink }}>EXPORT SETUP FAILED TO LOAD</h2>
@@ -356,19 +422,13 @@ export default function ExportPage() {
 
   return (
     <div>
-      <div className="neo-responsive-header" style={{ marginBottom: 24 }}>
-        <h1 style={{ margin: 0, fontFamily: font.head, fontSize: 24, color: color.ink }}>EXPORT</h1>
-        <p style={{ margin: "4px 0 0", fontFamily: font.body, fontWeight: 500, fontSize: 13, color: color.ink60 }}>
-          {job.name ?? `Job #${jobId?.slice(0, 8)}`}
-        </p>
-      </div>
+      {header}
 
       {running && (
-        <div style={{ background: color.yellow, border: `3px solid ${color.ink}`, padding: "10px 14px", marginBottom: 24, display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontFamily: font.body, fontWeight: 700, fontSize: 12 }}>!</span>
-          <p style={{ margin: 0, fontFamily: font.body, fontWeight: 500, fontSize: 13, color: color.ink }}>
+        <div style={{ marginBottom: 24 }}>
+          <InlineWarning tone="pink" fontSize={13} fontWeight={500}>
             This job is still running — the export will only cover the {totalPlaces.toLocaleString()} places found so far.
-          </p>
+          </InlineWarning>
         </div>
       )}
 
@@ -484,7 +544,11 @@ export default function ExportPage() {
         <p style={{ margin: "0 0 10px", fontFamily: font.body, fontWeight: 700, fontSize: 14, letterSpacing: "0.28px", color: color.ink }}>
           EXPORT HISTORY
         </p>
-        {historyQuery.isLoading && <div className="neo-skeleton" style={{ height: 108, maxWidth: 1126 }} />}
+        {historyQuery.isLoading && (
+          <div style={{ maxWidth: 1126 }}>
+            <SkeletonTable rows={2} columns={6} />
+          </div>
+        )}
         {historyQuery.isError && (
           <InlineWarning tone="pink" fontSize={12} fontWeight={700}>
             {historyQuery.error instanceof ApiError ? historyQuery.error.message : "Couldn't load export history"}

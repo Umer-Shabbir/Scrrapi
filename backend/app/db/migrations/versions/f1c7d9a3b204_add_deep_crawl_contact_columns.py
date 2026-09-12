@@ -20,63 +20,64 @@ first rather than letting the ALTER fail halfway.
 
 Run against the app DB only: `alembic -x target=app upgrade app@head`.
 """
+
 import sqlalchemy as sa
 from alembic import op
 
-revision = 'f1c7d9a3b204'
-down_revision = 'd4a2f8c15b73'
+revision = "f1c7d9a3b204"
+down_revision = "d4a2f8c15b73"
 branch_labels = None
 depends_on = None
 
 SOCIAL_COLUMNS = (
-    'facebook',
-    'instagram',
-    'linkedin',
-    'twitter',
-    'youtube',
-    'tiktok',
-    'whatsapp',
+    "facebook",
+    "instagram",
+    "linkedin",
+    "twitter",
+    "youtube",
+    "tiktok",
+    "whatsapp",
 )
 
 
 def upgrade() -> None:
     op.alter_column(
-        'results',
-        'email',
+        "results",
+        "email",
         existing_type=sa.String(length=255),
         type_=sa.String(length=1000),
         existing_nullable=True,
     )
     op.alter_column(
-        'results',
-        'phone',
+        "results",
+        "phone",
         existing_type=sa.String(length=50),
         type_=sa.String(length=500),
         existing_nullable=True,
     )
 
     for column in SOCIAL_COLUMNS:
-        op.add_column('results', sa.Column(column, sa.String(length=500), nullable=True))
-    op.add_column('results', sa.Column('other_socials', sa.String(length=1000), nullable=True))
+        op.add_column("results", sa.Column(column, sa.String(length=500), nullable=True))
+    op.add_column("results", sa.Column("other_socials", sa.String(length=1000), nullable=True))
 
 
 def downgrade() -> None:
-    op.drop_column('results', 'other_socials')
+    op.drop_column("results", "other_socials")
     for column in reversed(SOCIAL_COLUMNS):
-        op.drop_column('results', column)
+        op.drop_column("results", column)
 
     op.execute("UPDATE results SET phone = left(phone, 50) WHERE length(phone) > 50")
     op.execute("UPDATE results SET email = left(email, 255) WHERE length(email) > 255")
     op.alter_column(
-        'results',
-        'phone',
+        "results",
+        "phone",
         existing_type=sa.String(length=500),
         type_=sa.String(length=50),
         existing_nullable=True,
     )
     op.alter_column(
-        'results',
-        'email',
+        "results",
+        "email",
         existing_type=sa.String(length=1000),
         type_=sa.String(length=255),
         existing_nullable=True,

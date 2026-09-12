@@ -10,7 +10,6 @@ import json
 import uuid
 
 import openpyxl
-import pytest
 
 from app.db.models.result import Result
 from app.export.csv_writer import resolve_columns, write_csv
@@ -21,13 +20,29 @@ from app.export.xlsx_writer import write_xlsx
 
 def _result(**overrides) -> Result:
     defaults = dict(
-        id=uuid.uuid4(), job_id=uuid.uuid4(),
-        category="Plumber", name="Austin Plumbing", address="1 Main St",
-        city="Austin", state="TX", country="US", zip_code="78701",
-        phone="555-0100", email="a@b.com", website="b.com",
-        latitude=30.1, longitude=-97.7, rating=4.8,
-        facebook=None, instagram=None, linkedin=None, twitter=None,
-        youtube=None, tiktok=None, whatsapp=None, other_socials=None,
+        id=uuid.uuid4(),
+        job_id=uuid.uuid4(),
+        category="Plumber",
+        name="Austin Plumbing",
+        address="1 Main St",
+        city="Austin",
+        state="TX",
+        country="US",
+        zip_code="78701",
+        phone="555-0100",
+        email="a@b.com",
+        website="b.com",
+        latitude=30.1,
+        longitude=-97.7,
+        rating=4.8,
+        facebook=None,
+        instagram=None,
+        linkedin=None,
+        twitter=None,
+        youtube=None,
+        tiktok=None,
+        whatsapp=None,
+        other_socials=None,
         tech_stack=None,
     )
     defaults.update(overrides)
