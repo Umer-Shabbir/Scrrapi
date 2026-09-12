@@ -285,6 +285,18 @@ API, worker and UI together. See the README.
   5. **Runtime management & UI**: Fully configurable via runtime settings and the Settings
      page with secure API key inputs, live toggle, and Job Wizard Step 3 integration.
 
+- [x] **4.8 GBP Unclaimed / Unverified Listing Detection & Filter**
+  Files: `backend/app/scraping/google_maps/place.py`, `backend/app/scraping/bing_maps/place.py`,
+  `backend/app/db/models/result.py`, `backend/app/db/migrations/versions/26520f75246a_add_result_is_unclaimed_column.py`,
+  `backend/app/workers/tasks.py`, `backend/app/api/routers/jobs.py`,
+  `backend/app/export/csv_writer.py`, `backend/app/db/models/export.py`,
+  `frontend/src/types/index.ts`.
+
+  Detects whether a Google Business Profile (or Bing Maps listing) has the "Claim this business" prompt:
+  1. **Scraping extraction**: Checks for existence of merchant claim link (`a[data-item-id="merchant"]` in GBP and `a[href*="placeservicesservice.bing.com"]` in Bing).
+  2. **Persistence**: Stored in `results.is_unclaimed` (Boolean, nullable=True) via Alembic migration `26520f75246a`.
+  3. **API & Export integration**: Exposed in API endpoints (`isUnclaimed`), export writers (CSV/XLSX/JSONL/Sheets), and TypeScript frontend contracts.
+
 ---
 
 ## Phase 5 — Proxy pool & rate limiting
@@ -488,6 +500,10 @@ API, worker and UI together. See the README.
   a stub" gap in the README. The location half is `components/LocationQueue.tsx`
   (read-only here, built on the Locations page); a draft saved by the pre-ZIP
   version reads back as label-only targets rather than being dropped.
+
+- [x] **12.6 Native Two-Way CRM Sync (HubSpot, GoHighLevel, Pipedrive)**
+  Files: `backend/app/export/crm.py`, `backend/app/api/routers/integrations.py`, `frontend/src/pages/Integrations.tsx`, `frontend/src/components/LeadDetailDrawer.tsx`
+  Direct contact sync with automatic deduplication (matching on email and phone) and server-side OAuth2 handshake/mock token exchange. Integrated with "Push to CRM" actions on Lead Detail.
 
 - [ ] **12.5 Not yet exercised end to end**
   5.1–5.4 (proxy pool), 8.3/8.4 (XLSX/KML writers), 9.x (Bing), and 1.1

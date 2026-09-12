@@ -47,9 +47,7 @@ def main() -> None:
         # Naive UTC: `licenses.expires_at` is a plain DateTime column, and
         # deps.require_active_license compares it against a naive `utcnow()`.
         expires_at = datetime.now(UTC).replace(tzinfo=None) + timedelta(days=args.days)
-        license_ = db.execute(
-            select(License).where(License.user_id == user.id)
-        ).scalars().first()
+        license_ = db.execute(select(License).where(License.user_id == user.id)).scalars().first()
         if license_ is None:
             db.add(
                 License(
@@ -66,8 +64,7 @@ def main() -> None:
 
         db.commit()
         print(
-            f"{action} {args.email} (id={user.id}), "
-            f"license {args.plan} until {expires_at:%Y-%m-%d}"
+            f"{action} {args.email} (id={user.id}), license {args.plan} until {expires_at:%Y-%m-%d}"
         )
     finally:
         db.close()

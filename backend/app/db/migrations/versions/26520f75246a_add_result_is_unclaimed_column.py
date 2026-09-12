@@ -9,9 +9,9 @@ Maps listing has the "Claim this business" prompt.
 
 Run against the app DB only: `alembic -x target=app upgrade app@head`.
 """
-from alembic import op
-import sqlalchemy as sa
 
+import sqlalchemy as sa
+from alembic import op
 
 revision = "26520f75246a"
 down_revision = "e8f1a2c3b4d5"

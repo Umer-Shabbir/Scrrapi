@@ -159,6 +159,7 @@ Extends beyond general store contact info with three high-value capabilities:
 - **Decision-Maker Discovery** (`scraping/common/decision_maker_miner.py`): Finds Owner, Founder, CEO, and executive names from schema.org JSON-LD structured data, DOM bio/leadership cards, and contextual leadership patterns.
 - **Direct Personal Mobile Phone Numbers** (`scraping/common/mobile_miner.py`): Identifies personal cell lines and WhatsApp direct numbers via context cues and international mobile numbering plan heuristics.
 - **Review Sentiment & Pain-Point Extraction** (`scraping/common/review_sentiment.py`): Scores customer review sentiment and extracts recurring customer pain points (delays, unexpected fees, service quality, communication friction).
+- **GBP Unclaimed / Unverified Listing Detection** (`scraping/google_maps/place.py`, `scraping/bing_maps/place.py`): Detects whether a Google Business Profile or Bing listing has the "Claim this business" prompt (`is_unclaimed`), identifying high-value outreach opportunities for agencies and SEO consultants.
 
 ### 3.7 Waterfall Email & Mobile Phone Enrichment
 
@@ -219,6 +220,7 @@ Queueing is explicitly **append or replace** — a queue is usually assembled ov
 - `job_targets` (job_id, keyword, location_label, zip_code, city, region, country, status, places_found, places_done) — the geo four are nullable, since a hand-typed location has a label and nothing under it
 - `results` (job_id, category, name, address, city, state, country, zip, phone, email, mobile_phone, decision_maker, reviews_count, sentiment_score, sentiment_label, pain_points, website, lat, lon, facebook, instagram, linkedin, twitter, youtube, tiktok, whatsapp, other_socials, scraped_at) — `phone`/`email`/`mobile_phone` each hold a `", "`-joined list; social columns, mobile, decision maker, and review sentiment are populated via the deep crawl and place enrichment pipeline
 - `exports` (job_id, format, file_path, generated_at)
+- `integration_connections` (id, provider, status, config, last_event_at, last_event_summary, updated_at) — manages webhook configurations and OAuth2-connected CRMs (HubSpot, GoHighLevel, Pipedrive) for two-way native sync and contact deduplication
 - `app_settings` (key, value, updated_at) — runtime preferences the Settings page writes and every worker reads: `concurrent_targets`, `deep_crawl_enabled`, `deep_crawl_max_pages`
 
 **Geo DB (Postgres, separate schema or separate instance):**

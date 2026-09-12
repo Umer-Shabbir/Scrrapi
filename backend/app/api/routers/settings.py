@@ -58,9 +58,9 @@ from app.api.deps import get_app_db, get_current_user
 from app.core.audit import client_ip, log_audit_event
 from app.core.config import get_settings
 from app.core.runtime_settings import (
+    ALL_WATERFALL_PROVIDERS,
     EMAIL_VERIFICATION_MODES,
     SCORE_WEIGHT_KEYS,
-    ALL_WATERFALL_PROVIDERS,
     get_concurrent_targets,
     get_cooldown_base_s,
     get_deep_crawl_enabled,
@@ -142,7 +142,9 @@ class UpdateSettingsRequest(BaseModel):
     score_weights: dict[str, int] | None = Field(default=None, alias="scoreWeights")
     results_retention_days: int | None = Field(default=None, alias="resultsRetentionDays", ge=1)
     export_retention_days: int | None = Field(default=None, alias="exportRetentionDays", ge=1)
-    waterfall_enrichment_enabled: bool | None = Field(default=None, alias="waterfallEnrichmentEnabled")
+    waterfall_enrichment_enabled: bool | None = Field(
+        default=None, alias="waterfallEnrichmentEnabled"
+    )
     waterfall_providers: list[str] | None = Field(default=None, alias="waterfallProviders")
     hunter_api_key: str | None = Field(default=None, alias="hunterApiKey")
     prospeo_api_key: str | None = Field(default=None, alias="prospeoApiKey")
@@ -212,9 +214,7 @@ def update_settings(
             db, payload.waterfall_enrichment_enabled
         )
     if payload.waterfall_providers is not None:
-        changed["waterfall_providers"] = set_waterfall_providers(
-            db, payload.waterfall_providers
-        )
+        changed["waterfall_providers"] = set_waterfall_providers(db, payload.waterfall_providers)
     if payload.hunter_api_key is not None:
         changed["hunter_api_key"] = set_provider_api_key(db, "hunter", payload.hunter_api_key)
     if payload.prospeo_api_key is not None:
@@ -222,7 +222,9 @@ def update_settings(
     if payload.datagma_api_key is not None:
         changed["datagma_api_key"] = set_provider_api_key(db, "datagma", payload.datagma_api_key)
     if payload.findymail_api_key is not None:
-        changed["findymail_api_key"] = set_provider_api_key(db, "findymail", payload.findymail_api_key)
+        changed["findymail_api_key"] = set_provider_api_key(
+            db, "findymail", payload.findymail_api_key
+        )
 
     if payload.concurrent_targets is not None:
         changed["concurrent_targets"] = set_concurrent_targets(db, payload.concurrent_targets)

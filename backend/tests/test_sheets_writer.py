@@ -147,7 +147,7 @@ def test_write_sheets_pushes_rows_and_shares(monkeypatch) -> None:
     url = write_sheets([_result()], "unused", columns=["identity"])
 
     assert url == "https://docs.google.com/spreadsheets/d/sheet123"
-    assert sink["values"][0] == ["category", "name", "rating"]
-    assert sink["values"][1] == ["Plumber", "Austin Plumbing", 4.8]
+    assert sink["values"][0] == ["category", "name", "rating", "is_unclaimed"]
+    assert sink["values"][1] == ["Plumber", "Austin Plumbing", 4.8, None]
     assert sink["shared_with"] == "someone@example.com"
     assert sink["file_id"] == "sheet123"

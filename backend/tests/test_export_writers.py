@@ -116,7 +116,12 @@ def test_write_jsonl_one_object_per_line(tmp_path) -> None:
     lines = path.read_text(encoding="utf-8").strip().splitlines()
     assert len(lines) == 2
     rows = [json.loads(line) for line in lines]
-    assert rows[0] == {"category": "Plumber", "name": "Austin Plumbing", "rating": 4.8, "is_unclaimed": None}
+    assert rows[0] == {
+        "category": "Plumber",
+        "name": "Austin Plumbing",
+        "rating": 4.8,
+        "is_unclaimed": None,
+    }
     assert rows[1]["name"] == "Dallas Plumbing"
 
 

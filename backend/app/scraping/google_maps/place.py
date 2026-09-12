@@ -32,7 +32,7 @@ REVIEWS_COUNT_SELECTOR = (
     'div.F7nice span:last-child, button[data-tab-index="1"], span[aria-label*="review"]'
 )
 REVIEW_SNIPPET_SELECTOR = "span.wiI7pd, div.MyEned span"
-CLAIM_BUSINESS_SELECTOR = 'a[data-item-id="merchant"]' # Typically contains "Claim this business" or "Own this business?" or similar link
+CLAIM_BUSINESS_SELECTOR = 'a[data-item-id="merchant"]'  # "Claim this business" or similar link
 
 RATING_RE = re.compile(r"(\d+(?:[.,]\d+)?)")
 REVIEWS_COUNT_RE = re.compile(r"\(?([\d,.\s]+)\)?")

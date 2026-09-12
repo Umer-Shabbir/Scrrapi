@@ -284,10 +284,7 @@ def populated_place_rows(cache_dir: Path) -> Iterator[tuple[str, str, str, float
 def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     r = math.radians
     dlat, dlon = r(lat2 - lat1), r(lon2 - lon1)
-    h = (
-        math.sin(dlat / 2) ** 2
-        + math.cos(r(lat1)) * math.cos(r(lat2)) * math.sin(dlon / 2) ** 2
-    )
+    h = math.sin(dlat / 2) ** 2 + math.cos(r(lat1)) * math.cos(r(lat2)) * math.sin(dlon / 2) ** 2
     return 2 * 6371.0 * math.asin(math.sqrt(h))
 
 
@@ -433,9 +430,7 @@ def truncate(session) -> None:
     reference data), but don't run it against a live instance and expect the
     location pickers to keep answering.
     """
-    session.execute(
-        text("TRUNCATE TABLE zip_code, city, region, country RESTART IDENTITY")
-    )
+    session.execute(text("TRUNCATE TABLE zip_code, city, region, country RESTART IDENTITY"))
 
 
 def seed(
@@ -491,9 +486,7 @@ def seed(
     ) -> None:
         seen_countries.add(code)
         if (code, rkey) not in region_names:
-            region_names[(code, rkey)] = (
-                admin1_names.get((code, rkey)) or rname or UNKNOWN_REGION
-            )
+            region_names[(code, rkey)] = admin1_names.get((code, rkey)) or rname or UNKNOWN_REGION
         if city:
             key = (code, rkey, city)
             # Standardize coordinates, prefer first non-null

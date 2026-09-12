@@ -14,13 +14,13 @@ from app.db.base import AppBase
 # Sheets has no writer (SCREENLIST.md §11: "XLSX/KML/JSONL/Sheets writers not
 # implemented in backend yet"). Rows for all 6 are seeded so the card grid has
 # real (if mostly "not_connected") data instead of hardcoded frontend copy.
-INTEGRATION_PROVIDERS = ("webhooks", "slack", "hubspot", "pipedrive", "rest", "sheets")
+INTEGRATION_PROVIDERS = ("webhooks", "slack", "hubspot", "pipedrive", "rest", "sheets", "gohighlevel")
 
 # Providers whose CONNECT/CONFIGURE flow is actually implemented server-side.
 # The other 4 stay "not_connected" forever until a real client integration is
 # built -- the frontend disables their Connect button rather than pretending
 # a click established a connection (CLAUDE.md §9: no fake backend data).
-CONFIGURABLE_PROVIDERS = ("webhooks",)
+CONFIGURABLE_PROVIDERS = ("webhooks", "hubspot", "pipedrive", "gohighlevel")
 
 
 class IntegrationConnection(AppBase):

@@ -303,4 +303,3 @@ async def test_enrich_place_data_waterfall_trigger_on_missing_email() -> None:
     assert result["email_source"] == "waterfall:prospeo"
     assert result["phone_source"] == "waterfall:prospeo"
     assert "+15125550888" in result["mobile_phone"]
-

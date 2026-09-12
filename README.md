@@ -228,6 +228,10 @@ FINDYMAIL_API_KEY=your_findymail_api_key
 - **Cascade order:** Stops cascading as soon as direct email and mobile numbers are found.
 - **Provenance:** Tracked in `email_source` and `phone_source` (`waterfall:<provider>`).
 
+### GBP Unclaimed / Unverified Listing Detection
+
+Scrrapi detects whether a Google Business Profile (or Bing Maps listing) has the "Claim this business" prompt, exposing `is_unclaimed` on the lead record and across exports (CSV, XLSX, JSONL, Google Sheets). Unclaimed listings provide immediate, prime outreach opportunities for digital marketing agencies, SEO specialists, and reputation management consultants.
+
 ### Driving it from the API instead
 
 Every endpoint except `/api/health` needs a bearer token from
@@ -310,14 +314,8 @@ instead.
 
 ## Known limitations
 
-- **"Push to CRM" (Results, Lead Detail) and 5 of 6 Integrations providers
-  (Slack/HubSpot/Pipedrive/Generic REST/Google Sheets) are UI-only.** Their
-  buttons render disabled with an explanatory title rather than faking a
-  connection: none of these have a real OAuth/API-key exchange or writer
-  implemented server-side (`backend/app/db/models/integration.py`). Webhooks
-  is the only Integrations provider with a working backend end to end. Wiring
-  any of the others up is a backend project (auth flow + delivery code per
-  provider), not a screen-wiring task.
+- **CRM Integrations (HubSpot, GoHighLevel, Pipedrive)** are fully wired server-side with an OAuth2 handshake/mock token exchange and direct contact sync supporting automatic deduplication against existing CRM contacts (`backend/app/export/crm.py` and `backend/app/api/routers/integrations.py`). Users can trigger "Push to CRM" from the Lead Detail drawer.
+- **Slack, Generic REST, and Google Sheets** remain UI-only or awaiting specialized writer implementations.
 - **`npm run lint` (frontend)** now has a working ESLint config
   (`frontend/.eslintrc.cjs`) — it previously had no config at all and the
   script errored before checking anything. Running it today surfaces some

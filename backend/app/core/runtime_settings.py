@@ -321,7 +321,9 @@ def get_waterfall_enrichment_enabled(db: Session) -> bool:
 
 def set_waterfall_enrichment_enabled(db: Session, value: bool) -> bool:
     _write(db, WATERFALL_ENRICHMENT_ENABLED_KEY, "true" if value else "false")
-    logger.info("waterfall enrichment setting updated", extra={"waterfall_enrichment_enabled": bool(value)})
+    logger.info(
+        "waterfall enrichment setting updated", extra={"waterfall_enrichment_enabled": bool(value)}
+    )
     return bool(value)
 
 
@@ -331,7 +333,9 @@ def get_waterfall_providers(db: Session) -> list[str]:
     if row is None or not row.value.strip():
         return list(settings.waterfall_providers)
     providers = [p.strip().lower() for p in row.value.split(",") if p.strip()]
-    return [p for p in providers if p in ALL_WATERFALL_PROVIDERS] or list(settings.waterfall_providers)
+    return [p for p in providers if p in ALL_WATERFALL_PROVIDERS] or list(
+        settings.waterfall_providers
+    )
 
 
 def set_waterfall_providers(db: Session, value: list[str]) -> list[str]:
@@ -372,7 +376,9 @@ def set_provider_api_key(db: Session, provider: str, value: str | None) -> str |
     db_key = key_mapping[provider]
     val = (value or "").strip()
     _write(db, db_key, val)
-    logger.info("waterfall provider key updated", extra={"provider": provider, "has_key": bool(val)})
+    logger.info(
+        "waterfall provider key updated", extra={"provider": provider, "has_key": bool(val)}
+    )
     return val or None
 
 
