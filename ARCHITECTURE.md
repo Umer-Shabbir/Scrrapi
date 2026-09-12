@@ -160,6 +160,15 @@ Extends beyond general store contact info with three high-value capabilities:
 - **Direct Personal Mobile Phone Numbers** (`scraping/common/mobile_miner.py`): Identifies personal cell lines and WhatsApp direct numbers via context cues and international mobile numbering plan heuristics.
 - **Review Sentiment & Pain-Point Extraction** (`scraping/common/review_sentiment.py`): Scores customer review sentiment and extracts recurring customer pain points (delays, unexpected fees, service quality, communication friction).
 
+### 3.7 Waterfall Email & Mobile Phone Enrichment
+
+Provides automated fallback when internal web scraping yields no email or only generic role-based inboxes (`info@`, `contact@`, `sales@`, `support@`, `admin@`, etc.):
+- **Generic Email Classifier** (`scraping/common/generic_email.py`): Distinguishes generic switchboard inboxes from personal direct business emails.
+- **Third-Party Provider Adapters** (`scraping/common/waterfall/`): Modular adapters for Hunter.io, Prospeo.io, Datagma, and Findymail.
+- **Cascade Engine** (`scraping/common/waterfall/engine.py`): Executes sequential provider queries until direct personal email and mobile phone numbers are found, or the cascade is exhausted.
+- **Provenance Tracking**: Records exact source (`email_source` and `phone_source` set to `waterfall:<provider>`).
+- **Live Configuration**: Managed dynamically via DB runtime settings (`app_settings`) and exposed on the Settings screen and Job Wizard.
+
 ---
 
 ## 4. Frontend

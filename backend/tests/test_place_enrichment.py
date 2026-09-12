@@ -206,3 +206,101 @@ async def test_enrich_place_data_depth_capabilities() -> None:
         "Fast response & punctual" in result["positive_highlights"]
         or "Fair & affordable pricing" in result["positive_highlights"]
     )
+
+
+async def test_enrich_place_data_waterfall_trigger_on_generic_email() -> None:
+    # Website only contains info@joesplumbing.com -> triggers waterfall cascade
+    html = """<html><body>
+        <h1>Joe's Plumbing</h1>
+        <a href="mailto:info@joesplumbing.com">Contact</a>
+    </body></html>"""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.host == "joesplumbing.com":
+            return httpx.Response(200, text=html)
+        if request.url.host == "api.hunter.io":
+            return httpx.Response(
+                200,
+                json={
+                    "data": {
+                        "emails": [
+                            {
+                                "value": "joe.plumber@joesplumbing.com",
+                                "first_name": "Joe",
+                                "last_name": "Plumber",
+                                "position": "Owner",
+                                "phone_number": "+15125550999",
+                            }
+                        ]
+                    }
+                },
+            )
+        return httpx.Response(404)
+
+    place = {
+        "name": "Joe's Plumbing",
+        "website": "https://joesplumbing.com",
+    }
+
+    async with httpx.AsyncClient(transport=_transport(handler)) as client:
+        result = await enrich_place_data(
+            place,
+            client=client,
+            waterfall_enabled=True,
+            waterfall_providers=["hunter"],
+            waterfall_keys={"hunter": "test_key"},
+        )
+
+    assert result["email"] == "joe.plumber@joesplumbing.com, info@joesplumbing.com"
+    assert result["email_source"] == "waterfall:hunter"
+    assert result["phone_source"] == "waterfall:hunter"
+    assert "+15125550999" in result["mobile_phone"]
+
+
+async def test_enrich_place_data_waterfall_trigger_on_missing_email() -> None:
+    # Website contains no email -> triggers waterfall cascade
+    html = """<html><body>
+        <h1>Joe's Plumbing</h1>
+        <p>Call us at 555-0100</p>
+    </body></html>"""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.host == "joesplumbing.com":
+            return httpx.Response(200, text=html)
+        if request.url.host == "api.prospeo.io":
+            return httpx.Response(
+                200,
+                json={
+                    "response": {
+                        "emails": [
+                            {
+                                "email": "joe@joesplumbing.com",
+                                "first_name": "Joe",
+                                "last_name": "Owner",
+                                "mobile_phone": "+15125550888",
+                            }
+                        ]
+                    }
+                },
+            )
+        return httpx.Response(404)
+
+    place = {
+        "name": "Joe's Plumbing",
+        "website": "https://joesplumbing.com",
+    }
+
+    async with httpx.AsyncClient(transport=_transport(handler)) as client:
+        result = await enrich_place_data(
+            place,
+            client=client,
+            waterfall_enabled=True,
+            waterfall_providers=["prospeo"],
+            waterfall_keys={"prospeo": "test_key"},
+        )
+
+    assert result["email"] == "joe@joesplumbing.com"
+    assert result["email_source"] == "waterfall:prospeo"
+    assert result["phone_source"] == "waterfall:prospeo"
+    assert "+15125550888" in result["mobile_phone"]
+

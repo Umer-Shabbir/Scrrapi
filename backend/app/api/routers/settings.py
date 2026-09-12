@@ -60,16 +60,20 @@ from app.core.config import get_settings
 from app.core.runtime_settings import (
     EMAIL_VERIFICATION_MODES,
     SCORE_WEIGHT_KEYS,
+    ALL_WATERFALL_PROVIDERS,
     get_concurrent_targets,
     get_cooldown_base_s,
     get_deep_crawl_enabled,
     get_deep_crawl_max_pages,
     get_email_verification_mode,
     get_export_retention_days,
+    get_provider_api_key,
     get_results_retention_days,
     get_retry_ceiling,
     get_score_weights,
     get_tech_fingerprint_enabled,
+    get_waterfall_enrichment_enabled,
+    get_waterfall_providers,
     reset_to_defaults,
     set_concurrent_targets,
     set_cooldown_base_s,
@@ -77,10 +81,13 @@ from app.core.runtime_settings import (
     set_deep_crawl_max_pages,
     set_email_verification_mode,
     set_export_retention_days,
+    set_provider_api_key,
     set_results_retention_days,
     set_retry_ceiling,
     set_score_weight,
     set_tech_fingerprint_enabled,
+    set_waterfall_enrichment_enabled,
+    set_waterfall_providers,
 )
 from app.db.models.export import Export
 from app.db.models.result import Result, ResultHistory
@@ -102,6 +109,8 @@ _AUDITED_SETTINGS_KEYS = (
     "scoreWeights",
     "resultsRetentionDays",
     "exportRetentionDays",
+    "waterfallEnrichmentEnabled",
+    "waterfallProviders",
 )
 
 
@@ -133,6 +142,12 @@ class UpdateSettingsRequest(BaseModel):
     score_weights: dict[str, int] | None = Field(default=None, alias="scoreWeights")
     results_retention_days: int | None = Field(default=None, alias="resultsRetentionDays", ge=1)
     export_retention_days: int | None = Field(default=None, alias="exportRetentionDays", ge=1)
+    waterfall_enrichment_enabled: bool | None = Field(default=None, alias="waterfallEnrichmentEnabled")
+    waterfall_providers: list[str] | None = Field(default=None, alias="waterfallProviders")
+    hunter_api_key: str | None = Field(default=None, alias="hunterApiKey")
+    prospeo_api_key: str | None = Field(default=None, alias="prospeoApiKey")
+    datagma_api_key: str | None = Field(default=None, alias="datagmaApiKey")
+    findymail_api_key: str | None = Field(default=None, alias="findymailApiKey")
 
 
 @router.get("/")
@@ -192,6 +207,22 @@ def update_settings(
         changed["export_retention_days"] = set_export_retention_days(
             db, payload.export_retention_days
         )
+    if payload.waterfall_enrichment_enabled is not None:
+        changed["waterfall_enrichment_enabled"] = set_waterfall_enrichment_enabled(
+            db, payload.waterfall_enrichment_enabled
+        )
+    if payload.waterfall_providers is not None:
+        changed["waterfall_providers"] = set_waterfall_providers(
+            db, payload.waterfall_providers
+        )
+    if payload.hunter_api_key is not None:
+        changed["hunter_api_key"] = set_provider_api_key(db, "hunter", payload.hunter_api_key)
+    if payload.prospeo_api_key is not None:
+        changed["prospeo_api_key"] = set_provider_api_key(db, "prospeo", payload.prospeo_api_key)
+    if payload.datagma_api_key is not None:
+        changed["datagma_api_key"] = set_provider_api_key(db, "datagma", payload.datagma_api_key)
+    if payload.findymail_api_key is not None:
+        changed["findymail_api_key"] = set_provider_api_key(db, "findymail", payload.findymail_api_key)
 
     if payload.concurrent_targets is not None:
         changed["concurrent_targets"] = set_concurrent_targets(db, payload.concurrent_targets)
@@ -317,4 +348,11 @@ def _settings_dict(db: Session) -> dict:
         "maxResultsRetentionDays": settings.max_results_retention_days,
         "exportRetentionDays": get_export_retention_days(db),
         "maxExportRetentionDays": settings.max_export_retention_days,
+        "waterfallEnrichmentEnabled": get_waterfall_enrichment_enabled(db),
+        "waterfallProviders": get_waterfall_providers(db),
+        "allWaterfallProviders": list(ALL_WATERFALL_PROVIDERS),
+        "hunterApiKey": get_provider_api_key(db, "hunter"),
+        "prospeoApiKey": get_provider_api_key(db, "prospeo"),
+        "datagmaApiKey": get_provider_api_key(db, "datagma"),
+        "findymailApiKey": get_provider_api_key(db, "findymail"),
     }

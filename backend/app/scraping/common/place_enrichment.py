@@ -22,11 +22,13 @@ import httpx
 from app.scraping.common.decision_maker_miner import extract_decision_makers, format_decision_makers
 from app.scraping.common.email_miner import extract_emails, is_valid_email
 from app.scraping.common.email_verify import has_mx_record
+from app.scraping.common.generic_email import has_only_generic_emails
 from app.scraping.common.mobile_miner import extract_mobile_phones
 from app.scraping.common.phone_miner import extract_phones, phone_key
 from app.scraping.common.review_sentiment import analyze_reviews
 from app.scraping.common.site_crawler import CrawlBudget, SiteContacts, crawl_site
 from app.scraping.common.structured_data import extract_structured_contacts
+from app.scraping.common.waterfall.engine import run_waterfall_cascade
 from app.scraping.common.website_finder import get_website, search_website_on_startpage
 
 logger = logging.getLogger(__name__)
@@ -50,6 +52,9 @@ async def enrich_place_data(
     budget: CrawlBudget | None = None,
     on_crawl=None,
     email_verification_mode: str = "off",
+    waterfall_enabled: bool = False,
+    waterfall_providers: list[str] | None = None,
+    waterfall_keys: dict[str, str] | None = None,
 ) -> dict:
     """Fill in contact, decision-maker, mobile, and sentiment fields on a place-data dict."""
     name = place.get("name") or ""
@@ -69,9 +74,7 @@ async def enrich_place_data(
         contacts = SiteContacts()
         _apply_contacts(place, contacts, email_verification_mode=email_verification_mode)
         _apply_review_analysis(place, raw_reviews, review_count)
-        return place
-
-    if not deep_crawl:
+    elif not deep_crawl:
         # Shallow path: fetch home page for email, mobile, decision makers, and structured data
         shallow_contacts = await _mine_shallow_page(
             website, client=client, email_verification_mode=email_verification_mode
@@ -79,14 +82,54 @@ async def enrich_place_data(
         _apply_contacts(place, shallow_contacts, email_verification_mode=email_verification_mode)
         all_reviews = raw_reviews + shallow_contacts.reviews
         _apply_review_analysis(place, all_reviews, review_count)
-        return place
+    else:
+        contacts = await crawl_site(website, budget=budget, client=client)
+        _apply_contacts(place, contacts, email_verification_mode=email_verification_mode)
+        all_reviews = raw_reviews + contacts.reviews
+        _apply_review_analysis(place, all_reviews, review_count)
+        if on_crawl is not None:
+            on_crawl(contacts)
 
-    contacts = await crawl_site(website, budget=budget, client=client)
-    _apply_contacts(place, contacts, email_verification_mode=email_verification_mode)
-    all_reviews = raw_reviews + contacts.reviews
-    _apply_review_analysis(place, all_reviews, review_count)
-    if on_crawl is not None:
-        on_crawl(contacts)
+    # Waterfall Email & Mobile Phone Enrichment
+    # Trigger condition:
+    # 1. Internal website mining/crawl found no emails, OR
+    # 2. Internal website mining/crawl only found generic role-based emails (info@, contact@, etc.)
+    current_emails = place.get("emails") or []
+    if waterfall_enabled and (not current_emails or has_only_generic_emails(current_emails)):
+        domain = ""
+        if website:
+            domain = website.lower().replace("https://", "").replace("http://", "").split("/")[0]
+
+        if domain:
+            waterfall_res = await run_waterfall_cascade(
+                domain=domain,
+                company_name=name,
+                location=location,
+                existing_emails=place.get("emails") or [],
+                existing_mobiles=place.get("mobile_phones") or [],
+                decision_makers=place.get("decision_makers") or [],
+                provider_keys=waterfall_keys,
+                provider_order=waterfall_providers or ("hunter", "prospeo", "datagma", "findymail"),
+                client=client,
+            )
+
+            # Apply enriched emails & mobiles
+            if waterfall_res.emails:
+                place["emails"] = waterfall_res.emails
+                place["email"] = VALUE_SEPARATOR.join(waterfall_res.emails)
+                if waterfall_res.provider_used:
+                    place["email_source"] = f"waterfall:{waterfall_res.provider_used}"
+
+            if waterfall_res.mobile_phones:
+                place["mobile_phones"] = waterfall_res.mobile_phones
+                place["mobile_phone"] = VALUE_SEPARATOR.join(waterfall_res.mobile_phones)
+                if waterfall_res.provider_used:
+                    place["phone_source"] = f"waterfall:{waterfall_res.provider_used}"
+
+            if waterfall_res.decision_makers:
+                place["decision_makers"] = waterfall_res.decision_makers
+                place["decision_maker"] = format_decision_makers(waterfall_res.decision_makers)
+
     return place
 
 

@@ -12,7 +12,7 @@ from app.db.base import AppBase
 # review-count column on Result and nothing scrapes one, so including it would
 # mean exporting a fabricated blank -- see COLUMN_GROUPS' docstring.
 COLUMN_GROUPS: dict[str, tuple[str, ...]] = {
-    "identity": ("category", "name", "rating"),
+    "identity": ("category", "name", "rating", "is_unclaimed"),
     "contact": (
         "phone",
         "mobile_phone",

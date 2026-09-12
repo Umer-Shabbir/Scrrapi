@@ -173,6 +173,16 @@ class Settings(BaseSettings):
     max_cooldown_base_s: float = 300.0
     max_retry_ceiling: int = 10
 
+    # Waterfall Email & Mobile Phone Enrichment
+    # Cascades through third-party APIs (Hunter, Prospeo, Datagma, Findymail)
+    # when internal crawling finds no email or only generic role-based emails.
+    waterfall_enrichment_enabled: bool = False
+    waterfall_providers: list[str] = ["hunter", "prospeo", "datagma", "findymail"]
+    hunter_api_key: str | None = None
+    prospeo_api_key: str | None = None
+    datagma_api_key: str | None = None
+    findymail_api_key: str | None = None
+
 
 @lru_cache
 def get_settings() -> Settings:

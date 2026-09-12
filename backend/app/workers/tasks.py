@@ -34,6 +34,7 @@ from app.core.config import get_settings
 from app.core.events import publish_job_event
 from app.core.logging import log_context
 from app.core.runtime_settings import (
+    get_all_waterfall_provider_keys,
     get_deep_crawl_enabled,
     get_deep_crawl_max_pages,
     get_email_verification_mode,
@@ -41,6 +42,8 @@ from app.core.runtime_settings import (
     get_results_retention_days,
     get_retry_ceiling,
     get_tech_fingerprint_enabled,
+    get_waterfall_enrichment_enabled,
+    get_waterfall_providers,
 )
 from app.core.scheduling import MISFIRE_GRACE_MINUTES, next_run_after
 from app.db.models.export import Export
@@ -425,6 +428,9 @@ def scrape_place(
             crawl_budget = (
                 budget_from_settings(get_deep_crawl_max_pages(db)) if deep_crawl else None
             )
+            waterfall_enabled = get_waterfall_enrichment_enabled(db)
+            waterfall_providers = get_waterfall_providers(db)
+            waterfall_keys = get_all_waterfall_provider_keys(db)
 
             try:
                 place = asyncio.run(
@@ -436,6 +442,9 @@ def scrape_place(
                         budget=crawl_budget,
                         on_crawl=_announce_crawl,
                         email_verification_mode=email_verification_mode,
+                        waterfall_enabled=waterfall_enabled,
+                        waterfall_providers=waterfall_providers,
+                        waterfall_keys=waterfall_keys,
                     )
                 )
             except Exception as exc:
@@ -496,12 +505,12 @@ def scrape_place(
             phone_source = (
                 "maps listing"
                 if raw_detail.get("phone")
-                else ("site crawl" if place.get("phone") else None)
+                else (place.get("phone_source") or ("site crawl" if place.get("phone") else None))
             )
             email_source = (
                 "maps listing"
                 if raw_detail.get("email")
-                else ("site crawl" if place.get("email") else None)
+                else (place.get("email_source") or ("site crawl" if place.get("email") else None))
             )
 
             # Off unless Settings > Enrichment turns it on (app.core.runtime_settings) --
@@ -570,6 +579,7 @@ def scrape_place(
                 sentiment_score=place.get("sentiment_score"),
                 sentiment_label=place.get("sentiment_label"),
                 pain_points=place.get("pain_points_summary"),
+                is_unclaimed=place.get("is_unclaimed"),
                 website=place.get("website"),
                 latitude=place.get("latitude"),
                 longitude=place.get("longitude"),
@@ -643,6 +653,9 @@ async def _scrape_and_enrich(
     budget=None,
     on_crawl=None,
     email_verification_mode: str = "off",
+    waterfall_enabled: bool = False,
+    waterfall_providers: list[str] | None = None,
+    waterfall_keys: dict[str, str] | None = None,
 ) -> dict:
     """Detail scrape, then website/email enrichment.
 
@@ -665,6 +678,9 @@ async def _scrape_and_enrich(
         budget=budget,
         on_crawl=on_crawl,
         email_verification_mode=email_verification_mode,
+        waterfall_enabled=waterfall_enabled,
+        waterfall_providers=waterfall_providers,
+        waterfall_keys=waterfall_keys,
     )
 
 

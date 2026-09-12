@@ -25,6 +25,7 @@ COLUMNS = [
     "category",
     "name",
     "rating",
+    "is_unclaimed",
     "address",
     "city",
     "state",

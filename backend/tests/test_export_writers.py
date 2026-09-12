@@ -57,7 +57,7 @@ def test_resolve_columns_none_keeps_everything() -> None:
 
 def test_resolve_columns_identity_only() -> None:
     fields, include_score = resolve_columns(["identity"])
-    assert set(fields) == {"category", "name", "rating"}
+    assert set(fields) == {"category", "name", "rating", "is_unclaimed"}
     assert include_score is False
 
 
@@ -116,7 +116,7 @@ def test_write_jsonl_one_object_per_line(tmp_path) -> None:
     lines = path.read_text(encoding="utf-8").strip().splitlines()
     assert len(lines) == 2
     rows = [json.loads(line) for line in lines]
-    assert rows[0] == {"category": "Plumber", "name": "Austin Plumbing", "rating": 4.8}
+    assert rows[0] == {"category": "Plumber", "name": "Austin Plumbing", "rating": 4.8, "is_unclaimed": None}
     assert rows[1]["name"] == "Dallas Plumbing"
 
 

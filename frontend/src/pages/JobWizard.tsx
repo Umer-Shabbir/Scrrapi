@@ -428,6 +428,12 @@ function StepEnrichment() {
         onChange={(v) => save.mutate({ techFingerprintEnabled: v })}
       />
       <ToggleRow
+        title="Waterfall email & mobile enrichment"
+        copy="Cascades across third-party APIs (Hunter, Prospeo, Datagma, Findymail) when crawler discovers no email or only generic role-based inboxes."
+        checked={settingsQuery.data?.waterfallEnrichmentEnabled ?? false}
+        onChange={(v) => save.mutate({ waterfallEnrichmentEnabled: v })}
+      />
+      <ToggleRow
         title="Adaptive subdivision depth"
         copy="How aggressively dense areas are split into smaller sub-searches to avoid missing places."
         checked={false}

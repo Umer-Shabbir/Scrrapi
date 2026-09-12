@@ -566,7 +566,20 @@ export default function LeadDetailDrawer({ jobId, leadId, onClose }: Props) {
           >
             Tag
           </NeoButton>
-          <NeoButton variant="primary" size="sm" disabled>
+          <NeoButton
+            variant="primary"
+            size="sm"
+            onClick={async () => {
+              const crm = window.prompt("Push to which CRM? (hubspot, gohighlevel, pipedrive)", "hubspot");
+              if (!crm) return;
+              try {
+                const res: any = await api.post(`/api/integrations/${crm}/sync`, { lead });
+                window.alert(`Push successful:\n${JSON.stringify(res.syncResult || res)}`);
+              } catch (err: any) {
+                window.alert(`Push failed:\n${err.message || err.toString()}`);
+              }
+            }}
+          >
             Push to CRM
           </NeoButton>
         </div>

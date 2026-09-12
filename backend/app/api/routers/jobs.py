@@ -770,6 +770,7 @@ def _result_dict(
         "sentimentScore": result.sentiment_score,
         "sentimentLabel": result.sentiment_label,
         "painPoints": result.pain_points,
+        "isUnclaimed": result.is_unclaimed,
         "website": result.website,
         "latitude": result.latitude,
         "longitude": result.longitude,

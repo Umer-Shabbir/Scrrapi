@@ -37,6 +37,7 @@ REVIEWS_COUNT_RE = re.compile(r"\(?([\d,.\s]+)\)?")
 # Bing Maps centers the map on the entity's coordinates via a `cp=<lat>~<lng>` query
 # param on the URL once a place is opened -- no separate DOM lookup needed.
 LAT_LNG_RE = re.compile(r"cp=(-?\d+\.\d+)~(-?\d+\.\d+)")
+CLAIM_BUSINESS_SELECTOR = 'a[href*="placeservicesservice.bing.com"]'
 
 FEED_WAIT_MS = 15_000
 
@@ -105,6 +106,12 @@ async def get_place_data(place_url: str) -> PlaceData:
                         data["reviews_count"] = reviews_count
 
                     data["website"] = await _href(page.locator(WEBSITE_SELECTOR).first)
+
+                    claim_link = await page.locator(CLAIM_BUSINESS_SELECTOR).count()
+                    if claim_link > 0:
+                        data["is_unclaimed"] = True
+                    else:
+                        data["is_unclaimed"] = False
 
                     latitude, longitude = _lat_lng_from_url(page.url)
                     if latitude is not None and longitude is not None:

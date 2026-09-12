@@ -23,6 +23,7 @@ const PROVIDER_LABEL: Record<IntegrationProvider, string> = {
   slack: "Slack",
   hubspot: "HubSpot",
   pipedrive: "Pipedrive",
+  gohighlevel: "GoHighLevel",
   rest: "Generic REST",
   sheets: "Google Sheets",
 };
@@ -32,6 +33,7 @@ const PROVIDER_DESCRIPTION: Record<IntegrationProvider, string> = {
   slack: "Post run summaries to a channel.",
   hubspot: "Push leads as contacts with field mapping.",
   pipedrive: "Push leads as deals with field mapping.",
+  gohighlevel: "Push leads as contacts with field mapping.",
   rest: "Push leads to any REST endpoint you map.",
   sheets: "Append or overwrite a spreadsheet on each run.",
 };
@@ -83,6 +85,36 @@ function IntegrationCardTile({
   onConfigure: (provider: IntegrationProvider) => void;
   rowIndex: number;
 }) {
+  const queryClient = useQueryClient();
+
+  const connectOAuth = useMutation({
+    mutationFn: async (provider: IntegrationProvider) => {
+      // 1. Get auth URL
+      const authData = await api.get<{ authUrl: string; state: string; isMock?: boolean }>(
+        `/api/integrations/${provider}/auth-url`
+      );
+      // 2. Mock exchange callback code
+      return await api.post(`/api/integrations/${provider}/callback`, {
+        code: "mock_code_" + Math.random().toString(36).substring(7),
+        state: authData.state,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["integrations"] });
+    },
+  });
+
+  const disconnect = useMutation({
+    mutationFn: async (provider: IntegrationProvider) => {
+      return await api.del(`/api/integrations/${provider}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["integrations"] });
+    },
+  });
+
+  const isCrm = card.provider === "hubspot" || card.provider === "pipedrive" || card.provider === "gohighlevel";
+
   return (
     <div
       className="neo-row-enter"
@@ -99,7 +131,7 @@ function IntegrationCardTile({
     >
       <div style={{ display: "flex", alignItems: "center", width: "100%" }}>
         <span style={{ fontFamily: font.body, fontWeight: 700, fontSize: 14, letterSpacing: "0.28px", color: color.ink }}>
-          {PROVIDER_LABEL[card.provider].toUpperCase()}
+          {PROVIDER_LABEL[card.provider]?.toUpperCase() ?? card.provider.toUpperCase()}
         </span>
         <div style={{ flex: 1 }} />
         <IntegrationStateChip status={card.status} />
@@ -112,9 +144,33 @@ function IntegrationCardTile({
       </p>
       <div style={{ flex: 1 }} />
       {card.configurable ? (
-        <NeoButton variant="ghost" onClick={() => onConfigure(card.provider)}>
-          {card.status === "connected" ? "Configure" : "Connect"}
-        </NeoButton>
+        isCrm ? (
+          <div style={{ display: "flex", gap: 8 }}>
+            {card.status === "connected" ? (
+              <NeoButton
+                variant="destructive"
+                size="sm"
+                loading={disconnect.isPending}
+                onClick={() => disconnect.mutate(card.provider)}
+              >
+                Disconnect
+              </NeoButton>
+            ) : (
+              <NeoButton
+                variant="ghost"
+                size="sm"
+                loading={connectOAuth.isPending}
+                onClick={() => connectOAuth.mutate(card.provider)}
+              >
+                Connect
+              </NeoButton>
+            )}
+          </div>
+        ) : (
+          <NeoButton variant="ghost" onClick={() => onConfigure(card.provider)}>
+            {card.status === "connected" ? "Configure" : "Connect"}
+          </NeoButton>
+        )
       ) : (
         <span title="Not available yet -- no API credentials configured for this provider">
           <NeoButton variant="primary" disabled>

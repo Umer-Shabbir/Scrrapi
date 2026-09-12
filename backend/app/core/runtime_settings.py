@@ -101,6 +101,15 @@ SCORE_WEIGHT_DEFAULTS = {
 RESULTS_RETENTION_DAYS_KEY = "results_retention_days"
 EXPORT_RETENTION_DAYS_KEY = "export_retention_days"
 
+# Waterfall Email & Mobile Phone Enrichment (Settings > Waterfall Enrichment).
+WATERFALL_ENRICHMENT_ENABLED_KEY = "waterfall_enrichment_enabled"
+WATERFALL_PROVIDERS_KEY = "waterfall_providers"
+HUNTER_API_KEY_KEY = "hunter_api_key"
+PROSPEO_API_KEY_KEY = "prospeo_api_key"
+DATAGMA_API_KEY_KEY = "datagma_api_key"
+FINDYMAIL_API_KEY_KEY = "findymail_api_key"
+ALL_WATERFALL_PROVIDERS = ("hunter", "prospeo", "datagma", "findymail")
+
 _TRUE_VALUES = {"1", "true", "yes", "on"}
 
 
@@ -300,6 +309,80 @@ def set_export_retention_days(db: Session, value: int) -> int:
     _write(db, EXPORT_RETENTION_DAYS_KEY, str(clamped))
     logger.info("export retention updated", extra={"export_retention_days": clamped})
     return clamped
+
+
+def get_waterfall_enrichment_enabled(db: Session) -> bool:
+    """Whether waterfall third-party enrichment runs on missing/generic emails."""
+    row = db.get(AppSetting, WATERFALL_ENRICHMENT_ENABLED_KEY)
+    if row is None:
+        return settings.waterfall_enrichment_enabled
+    return row.value.strip().lower() in _TRUE_VALUES
+
+
+def set_waterfall_enrichment_enabled(db: Session, value: bool) -> bool:
+    _write(db, WATERFALL_ENRICHMENT_ENABLED_KEY, "true" if value else "false")
+    logger.info("waterfall enrichment setting updated", extra={"waterfall_enrichment_enabled": bool(value)})
+    return bool(value)
+
+
+def get_waterfall_providers(db: Session) -> list[str]:
+    """Ordered sequence of providers to try in the waterfall cascade."""
+    row = db.get(AppSetting, WATERFALL_PROVIDERS_KEY)
+    if row is None or not row.value.strip():
+        return list(settings.waterfall_providers)
+    providers = [p.strip().lower() for p in row.value.split(",") if p.strip()]
+    return [p for p in providers if p in ALL_WATERFALL_PROVIDERS] or list(settings.waterfall_providers)
+
+
+def set_waterfall_providers(db: Session, value: list[str]) -> list[str]:
+    valid = [p.strip().lower() for p in value if p.strip().lower() in ALL_WATERFALL_PROVIDERS]
+    if not valid:
+        valid = list(ALL_WATERFALL_PROVIDERS)
+    _write(db, WATERFALL_PROVIDERS_KEY, ",".join(valid))
+    logger.info("waterfall providers updated", extra={"waterfall_providers": valid})
+    return valid
+
+
+def get_provider_api_key(db: Session, provider: str) -> str | None:
+    """Retrieve the API key for a specific waterfall provider."""
+    key_mapping = {
+        "hunter": (HUNTER_API_KEY_KEY, settings.hunter_api_key),
+        "prospeo": (PROSPEO_API_KEY_KEY, settings.prospeo_api_key),
+        "datagma": (DATAGMA_API_KEY_KEY, settings.datagma_api_key),
+        "findymail": (FINDYMAIL_API_KEY_KEY, settings.findymail_api_key),
+    }
+    if provider not in key_mapping:
+        return None
+    db_key, default_env = key_mapping[provider]
+    row = db.get(AppSetting, db_key)
+    if row is not None and row.value.strip():
+        return row.value.strip()
+    return default_env
+
+
+def set_provider_api_key(db: Session, provider: str, value: str | None) -> str | None:
+    key_mapping = {
+        "hunter": HUNTER_API_KEY_KEY,
+        "prospeo": PROSPEO_API_KEY_KEY,
+        "datagma": DATAGMA_API_KEY_KEY,
+        "findymail": FINDYMAIL_API_KEY_KEY,
+    }
+    if provider not in key_mapping:
+        raise ValueError(f"unknown waterfall provider: {provider!r}")
+    db_key = key_mapping[provider]
+    val = (value or "").strip()
+    _write(db, db_key, val)
+    logger.info("waterfall provider key updated", extra={"provider": provider, "has_key": bool(val)})
+    return val or None
+
+
+def get_all_waterfall_provider_keys(db: Session) -> dict[str, str]:
+    """Map of provider_name -> api_key for all configured waterfall providers."""
+    return {
+        provider: get_provider_api_key(db, provider) or ""
+        for provider in ALL_WATERFALL_PROVIDERS
+        if get_provider_api_key(db, provider)
+    }
 
 
 def reset_to_defaults(db: Session) -> None:

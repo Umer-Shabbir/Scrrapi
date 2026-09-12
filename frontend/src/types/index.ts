@@ -149,6 +149,8 @@ export interface Result {
   sentimentLabel: string | null;
   /** Extracted pain points / complaints summary from customer reviews. */
   painPoints: string | null;
+  /** Whether the Google/Bing Maps listing has a "Claim this business" prompt. */
+  isUnclaimed: boolean | null;
   /** "maps listing" | "site crawl" | null -- which stage first supplied the value. */
   phoneSource: string | null;
   emailSource: string | null;
@@ -369,6 +371,14 @@ export interface AppSettings {
   /** Days a generated export file is kept before the daily purge sweep removes it. */
   exportRetentionDays: number;
   maxExportRetentionDays: number;
+  /** Whether waterfall third-party enrichment runs on missing/generic emails. */
+  waterfallEnrichmentEnabled: boolean;
+  waterfallProviders: string[];
+  allWaterfallProviders: string[];
+  hunterApiKey: string | null;
+  prospeoApiKey: string | null;
+  datagmaApiKey: string | null;
+  findymailApiKey: string | null;
 }
 
 // Mirrors GET/POST /api/templates (backend/app/api/routers/templates.py).
@@ -477,7 +487,7 @@ export interface SuppressionBulkResponse {
   rowsRemoved: number;
 }
 
-export type IntegrationProvider = "webhooks" | "slack" | "hubspot" | "pipedrive" | "rest" | "sheets";
+export type IntegrationProvider = "webhooks" | "slack" | "hubspot" | "pipedrive" | "gohighlevel" | "rest" | "sheets";
 export type IntegrationStatus = "connected" | "not_connected";
 
 export interface IntegrationCard {

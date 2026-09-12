@@ -32,6 +32,7 @@ REVIEWS_COUNT_SELECTOR = (
     'div.F7nice span:last-child, button[data-tab-index="1"], span[aria-label*="review"]'
 )
 REVIEW_SNIPPET_SELECTOR = "span.wiI7pd, div.MyEned span"
+CLAIM_BUSINESS_SELECTOR = 'a[data-item-id="merchant"]' # Typically contains "Claim this business" or "Own this business?" or similar link
 
 RATING_RE = re.compile(r"(\d+(?:[.,]\d+)?)")
 REVIEWS_COUNT_RE = re.compile(r"\(?([\d,.\s]+)\)?")
@@ -64,6 +65,7 @@ class PlaceData(TypedDict, total=False):
     latitude: float
     longitude: float
     website: str | None
+    is_unclaimed: bool
 
 
 async def get_place_data(place_url: str) -> PlaceData:
@@ -136,6 +138,12 @@ async def get_place_data(place_url: str) -> PlaceData:
                         data["reviews"] = snippets
 
                     data["website"] = await _href(page.locator(WEBSITE_SELECTOR).first)
+
+                    claim_link = await page.locator(CLAIM_BUSINESS_SELECTOR).count()
+                    if claim_link > 0:
+                        data["is_unclaimed"] = True
+                    else:
+                        data["is_unclaimed"] = False
 
                     latitude, longitude = _lat_lng_from_url(page.url)
                     if latitude is not None and longitude is not None:

@@ -264,6 +264,27 @@ API, worker and UI together. See the README.
   Wired into the result schema, lead scoring weights, exports (CSV/XLSX/JSONL/Sheets),
   and UI drawers/grids.
 
+- [x] **4.7 Waterfall Email & Mobile Phone Enrichment**
+  Files: `backend/app/scraping/common/generic_email.py`,
+  `backend/app/scraping/common/waterfall/` (`base.py`, `hunter.py`, `prospeo.py`, `datagma.py`, `findymail.py`, `engine.py`);
+  `backend/app/scraping/common/place_enrichment.py`, `backend/app/workers/tasks.py`;
+  Settings: `backend/app/core/runtime_settings.py`, `backend/app/api/routers/settings.py`;
+  UI: `frontend/src/pages/Settings.tsx`, `frontend/src/pages/JobWizard.tsx`.
+
+  Provides automated waterfall cascade for hard-to-reach local businesses:
+  1. **Trigger conditions**: Conditionally executes when internal website crawler yields
+     no email, OR when all discovered emails are generic role-based inboxes
+     (`info@`, `contact@`, `sales@`, `support@`, `admin@`, etc.).
+  2. **Waterfall cascade engine**: Cascades through configured third-party B2B contact
+     enrichment APIs (Hunter.io, Prospeo.io, Datagma, Findymail) in priority sequence.
+  3. **Enrichment matching**: Discovers direct verified personal emails, direct mobile phone
+     lines, and executive decision-maker names using business domain, business name,
+     location, and leadership records.
+  4. **Provenance & tracking**: Tracks origin with `email_source = "waterfall:<provider>"`
+     and `phone_source = "waterfall:<provider>"`.
+  5. **Runtime management & UI**: Fully configurable via runtime settings and the Settings
+     page with secure API key inputs, live toggle, and Job Wizard Step 3 integration.
+
 ---
 
 ## Phase 5 — Proxy pool & rate limiting

@@ -621,6 +621,119 @@ export default function Settings() {
       </SectionShell>
 
       <SectionShell
+        title="WATERFALL EMAIL & MOBILE ENRICHMENT"
+        headerRight={
+          <NeoSwitch
+            checked={settings.waterfallEnrichmentEnabled}
+            onChange={() => save.mutate({ waterfallEnrichmentEnabled: !settings.waterfallEnrichmentEnabled })}
+            disabled={save.isPending}
+          />
+        }
+      >
+        <p style={{ margin: 0, fontFamily: font.body, fontSize: 12, color: color.ink60 }}>
+          Automatically triggers a priority cascade across third-party enrichment providers when the internal
+          website crawler discovers no email or only generic role-based inboxes (info@, contact@, support@, sales@).
+          Direct personal emails and direct mobile numbers are merged into the lead record with full source tracking.
+        </p>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 14, opacity: settings.waterfallEnrichmentEnabled ? 1 : 0.6 }}>
+          <span style={{ fontFamily: font.body, fontWeight: 700, fontSize: 12, letterSpacing: "0.24px", color: color.ink }}>
+            CASCADE PROVIDERS & API KEYS
+          </span>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16 }}>
+            {/* Hunter.io */}
+            <div style={{ border: `2px solid ${color.ink}`, padding: 12, background: color.sand }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                <span style={{ fontFamily: font.body, fontWeight: 700, fontSize: 12, color: color.ink }}>1. HUNTER.IO</span>
+                <Chip label={settings.hunterApiKey ? "CONFIGURED" : "NO KEY"} bg={settings.hunterApiKey ? color.green : color.sand} />
+              </div>
+              <input
+                type="password"
+                placeholder="Hunter API Key (hidden)"
+                defaultValue={settings.hunterApiKey || ""}
+                disabled={!settings.waterfallEnrichmentEnabled || save.isPending}
+                onBlur={(e) => {
+                  const v = e.target.value.trim();
+                  if (v !== (settings.hunterApiKey || "")) save.mutate({ hunterApiKey: v || null });
+                }}
+                style={{
+                  width: "100%", height: 32, boxSizing: "border-box", border: `2px solid ${color.ink}`,
+                  padding: "0 8px", fontFamily: font.mono, fontSize: 11, background: color.white,
+                }}
+              />
+            </div>
+
+            {/* Prospeo.io */}
+            <div style={{ border: `2px solid ${color.ink}`, padding: 12, background: color.sand }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                <span style={{ fontFamily: font.body, fontWeight: 700, fontSize: 12, color: color.ink }}>2. PROSPEO.IO</span>
+                <Chip label={settings.prospeoApiKey ? "CONFIGURED" : "NO KEY"} bg={settings.prospeoApiKey ? color.green : color.sand} />
+              </div>
+              <input
+                type="password"
+                placeholder="Prospeo X-KEY (hidden)"
+                defaultValue={settings.prospeoApiKey || ""}
+                disabled={!settings.waterfallEnrichmentEnabled || save.isPending}
+                onBlur={(e) => {
+                  const v = e.target.value.trim();
+                  if (v !== (settings.prospeoApiKey || "")) save.mutate({ prospeoApiKey: v || null });
+                }}
+                style={{
+                  width: "100%", height: 32, boxSizing: "border-box", border: `2px solid ${color.ink}`,
+                  padding: "0 8px", fontFamily: font.mono, fontSize: 11, background: color.white,
+                }}
+              />
+            </div>
+
+            {/* Datagma */}
+            <div style={{ border: `2px solid ${color.ink}`, padding: 12, background: color.sand }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                <span style={{ fontFamily: font.body, fontWeight: 700, fontSize: 12, color: color.ink }}>3. DATAGMA</span>
+                <Chip label={settings.datagmaApiKey ? "CONFIGURED" : "NO KEY"} bg={settings.datagmaApiKey ? color.green : color.sand} />
+              </div>
+              <input
+                type="password"
+                placeholder="Datagma API Key (hidden)"
+                defaultValue={settings.datagmaApiKey || ""}
+                disabled={!settings.waterfallEnrichmentEnabled || save.isPending}
+                onBlur={(e) => {
+                  const v = e.target.value.trim();
+                  if (v !== (settings.datagmaApiKey || "")) save.mutate({ datagmaApiKey: v || null });
+                }}
+                style={{
+                  width: "100%", height: 32, boxSizing: "border-box", border: `2px solid ${color.ink}`,
+                  padding: "0 8px", fontFamily: font.mono, fontSize: 11, background: color.white,
+                }}
+              />
+            </div>
+
+            {/* Findymail */}
+            <div style={{ border: `2px solid ${color.ink}`, padding: 12, background: color.sand }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                <span style={{ fontFamily: font.body, fontWeight: 700, fontSize: 12, color: color.ink }}>4. FINDYMAIL</span>
+                <Chip label={settings.findymailApiKey ? "CONFIGURED" : "NO KEY"} bg={settings.findymailApiKey ? color.green : color.sand} />
+              </div>
+              <input
+                type="password"
+                placeholder="Findymail Bearer Token (hidden)"
+                defaultValue={settings.findymailApiKey || ""}
+                disabled={!settings.waterfallEnrichmentEnabled || save.isPending}
+                onBlur={(e) => {
+                  const v = e.target.value.trim();
+                  if (v !== (settings.findymailApiKey || "")) save.mutate({ findymailApiKey: v || null });
+                }}
+                style={{
+                  width: "100%", height: 32, boxSizing: "border-box", border: `2px solid ${color.ink}`,
+                  padding: "0 8px", fontFamily: font.mono, fontSize: 11, background: color.white,
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      </SectionShell>
+
+      <SectionShell
         title="LEAD SCORING"
         headerRight={
           <NeoButton variant="ghost" size="sm" onClick={() => save.mutate({ scoreWeights: DEFAULT_SCORE_WEIGHTS })}>

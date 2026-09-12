@@ -209,6 +209,25 @@ docker compose exec backend python scripts/create_user.py you@example.com yourpa
 Job creation returns 402 without a non-expired row in `licenses` for that user;
 the UI says so on the job form and the Account page rather than just failing.
 
+### Waterfall Email & Mobile Phone Enrichment
+
+When internal website mining discovers no email or only generic role-based inboxes (`info@`, `contact@`, `sales@`, `support@`, `admin@`, etc.), Scrrapi can automatically cascade through third-party data enrichment APIs (Hunter.io, Prospeo.io, Datagma, Findymail) to acquire direct, verified decision-maker emails and direct personal mobile numbers.
+
+Configure provider API keys in `.env` or dynamically at runtime via the **Settings** page:
+
+```env
+WATERFALL_ENRICHMENT_ENABLED=true
+WATERFALL_PROVIDERS=["hunter","prospeo","datagma","findymail"]
+HUNTER_API_KEY=your_hunter_api_key
+PROSPEO_API_KEY=your_prospeo_api_key
+DATAGMA_API_KEY=your_datagma_api_key
+FINDYMAIL_API_KEY=your_findymail_api_key
+```
+
+- **Trigger conditions:** Runs only when direct email is missing or generic.
+- **Cascade order:** Stops cascading as soon as direct email and mobile numbers are found.
+- **Provenance:** Tracked in `email_source` and `phone_source` (`waterfall:<provider>`).
+
 ### Driving it from the API instead
 
 Every endpoint except `/api/health` needs a bearer token from

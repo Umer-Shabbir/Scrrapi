@@ -100,6 +100,8 @@ class Result(AppBase):
     sentiment_label: Mapped[str | None] = mapped_column(String(50), nullable=True)
     # Extracted customer pain points / friction summary from reviews
     pain_points: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    # Whether GBP / Maps listing has "Claim this business" prompt (Unclaimed/Unverified)
+    is_unclaimed: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
 
     # Comma-joined signature names from app.scraping.common.tech_fingerprint, run
     # once against the business's own home page. NULL if there was no website to
