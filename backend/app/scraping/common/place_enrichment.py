@@ -19,6 +19,7 @@ import logging
 
 import httpx
 
+from app.ai.icebreaker import IcebreakerGenerator
 from app.scraping.common.decision_maker_miner import extract_decision_makers, format_decision_makers
 from app.scraping.common.email_miner import extract_emails, is_valid_email
 from app.scraping.common.email_verify import has_mx_record
@@ -55,6 +56,7 @@ async def enrich_place_data(
     waterfall_enabled: bool = False,
     waterfall_providers: list[str] | None = None,
     waterfall_keys: dict[str, str] | None = None,
+    anthropic_api_key: str | None = None,
 ) -> dict:
     """Fill in contact, decision-maker, mobile, and sentiment fields on a place-data dict."""
     name = place.get("name") or ""
@@ -129,6 +131,19 @@ async def enrich_place_data(
             if waterfall_res.decision_makers:
                 place["decision_makers"] = waterfall_res.decision_makers
                 place["decision_maker"] = format_decision_makers(waterfall_res.decision_makers)
+
+    # Generate Personalized AI Context-based Icebreaker via Anthropic
+    if anthropic_api_key:
+        icebreaker = IcebreakerGenerator(anthropic_api_key)
+        generated_icebreaker = await icebreaker.generate_icebreaker(
+            name=name,
+            category=place.get("category"),
+            pain_points=place.get("pain_points"),
+            positive_highlights=place.get("positive_highlights"),
+            review_sentiment=place.get("sentiment_label"),
+        )
+        if generated_icebreaker:
+            place["ai_icebreaker"] = generated_icebreaker
 
     return place
 

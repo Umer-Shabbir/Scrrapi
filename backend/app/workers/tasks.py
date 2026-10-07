@@ -35,6 +35,7 @@ from app.core.events import publish_job_event
 from app.core.logging import log_context
 from app.core.runtime_settings import (
     get_all_waterfall_provider_keys,
+    get_anthropic_api_key,
     get_deep_crawl_enabled,
     get_deep_crawl_max_pages,
     get_email_verification_mode,
@@ -431,6 +432,7 @@ def scrape_place(
             waterfall_enabled = get_waterfall_enrichment_enabled(db)
             waterfall_providers = get_waterfall_providers(db)
             waterfall_keys = get_all_waterfall_provider_keys(db)
+            anthropic_api_key = get_anthropic_api_key(db)
 
             try:
                 place = asyncio.run(
@@ -445,6 +447,7 @@ def scrape_place(
                         waterfall_enabled=waterfall_enabled,
                         waterfall_providers=waterfall_providers,
                         waterfall_keys=waterfall_keys,
+                        anthropic_api_key=anthropic_api_key,
                     )
                 )
             except Exception as exc:
@@ -656,6 +659,7 @@ async def _scrape_and_enrich(
     waterfall_enabled: bool = False,
     waterfall_providers: list[str] | None = None,
     waterfall_keys: dict[str, str] | None = None,
+    anthropic_api_key: str | None = None,
 ) -> dict:
     """Detail scrape, then website/email enrichment.
 
@@ -681,6 +685,7 @@ async def _scrape_and_enrich(
         waterfall_enabled=waterfall_enabled,
         waterfall_providers=waterfall_providers,
         waterfall_keys=waterfall_keys,
+        anthropic_api_key=anthropic_api_key,
     )
 
 

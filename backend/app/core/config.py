@@ -183,6 +183,9 @@ class Settings(BaseSettings):
     datagma_api_key: str | None = None
     findymail_api_key: str | None = None
 
+    # AI Features
+    anthropic_api_key: str | None = None
+
 
 @lru_cache
 def get_settings() -> Settings:

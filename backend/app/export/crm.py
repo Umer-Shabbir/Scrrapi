@@ -4,9 +4,10 @@ Handles direct contact sync to HubSpot, GoHighLevel (GHL), and Pipedrive with
 automatic deduplication against existing CRM contacts.
 """
 
-from typing import Any, Dict
-import httpx
 import logging
+from typing import Any
+
+import httpx
 
 logger = logging.getLogger(__name__)
 
@@ -17,14 +18,14 @@ class BaseCRMClient:
     def __init__(self, access_token: str):
         self.access_token = access_token
 
-    def sync_contact(self, contact_data: Dict[str, Any]) -> Dict[str, Any]:
+    def sync_contact(self, contact_data: dict[str, Any]) -> dict[str, Any]:
         raise NotImplementedError
 
 
 class HubSpotClient(BaseCRMClient):
     """Syncs contacts with HubSpot CRM via HubSpot Contacts v3 API."""
 
-    def sync_contact(self, contact_data: Dict[str, Any]) -> Dict[str, Any]:
+    def sync_contact(self, contact_data: dict[str, Any]) -> dict[str, Any]:
         email = contact_data.get("email")
         name = contact_data.get("name") or ""
         phone = contact_data.get("phone")
@@ -54,7 +55,11 @@ class HubSpotClient(BaseCRMClient):
                 "status": "updated" if is_duplicate else "created",
                 "crm_id": "hs_mock_12345",
                 "deduplicated": is_duplicate,
-                "message": "Deduplicated against existing contact" if is_duplicate else "New contact created"
+                "message": (
+                    "Deduplicated against existing contact"
+                    if is_duplicate
+                    else "New contact created"
+                )
             }
 
         headers = {
@@ -122,13 +127,13 @@ class HubSpotClient(BaseCRMClient):
                 }
         except httpx.HTTPError as exc:
             logger.error("HubSpot sync failed: %s", exc)
-            raise CRMSyncError(f"HubSpot sync failed: {exc}")
+            raise CRMSyncError(f"HubSpot sync failed: {exc}") from exc
 
 
 class GoHighLevelClient(BaseCRMClient):
     """Syncs contacts with GoHighLevel (GHL) CRM via GHL API v2."""
 
-    def sync_contact(self, contact_data: Dict[str, Any]) -> Dict[str, Any]:
+    def sync_contact(self, contact_data: dict[str, Any]) -> dict[str, Any]:
         email = contact_data.get("email")
         name = contact_data.get("name") or ""
         phone = contact_data.get("phone")
@@ -155,7 +160,11 @@ class GoHighLevelClient(BaseCRMClient):
                 "status": "updated" if is_duplicate else "created",
                 "crm_id": "ghl_mock_67890",
                 "deduplicated": is_duplicate,
-                "message": "Deduplicated against existing GHL contact" if is_duplicate else "New contact created in GHL"
+                "message": (
+                    "Deduplicated against existing GHL contact"
+                    if is_duplicate
+                    else "New contact created in GHL"
+                )
             }
 
         headers = {
@@ -185,13 +194,13 @@ class GoHighLevelClient(BaseCRMClient):
             }
         except httpx.HTTPError as exc:
             logger.error("GoHighLevel sync failed: %s", exc)
-            raise CRMSyncError(f"GoHighLevel sync failed: {exc}")
+            raise CRMSyncError(f"GoHighLevel sync failed: {exc}") from exc
 
 
 class PipedriveClient(BaseCRMClient):
     """Syncs persons/organizations with Pipedrive CRM via Pipedrive REST API v1."""
 
-    def sync_contact(self, contact_data: Dict[str, Any]) -> Dict[str, Any]:
+    def sync_contact(self, contact_data: dict[str, Any]) -> dict[str, Any]:
         email = contact_data.get("email")
         name = contact_data.get("name") or "Unknown"
         phone = contact_data.get("phone")
@@ -203,7 +212,11 @@ class PipedriveClient(BaseCRMClient):
                 "status": "updated" if is_duplicate else "created",
                 "crm_id": "pd_mock_11223",
                 "deduplicated": is_duplicate,
-                "message": "Deduplicated against existing Pipedrive person" if is_duplicate else "New person created in Pipedrive"
+                "message": (
+                    "Deduplicated against existing Pipedrive person"
+                    if is_duplicate
+                    else "New person created in Pipedrive"
+                )
             }
 
         headers = {
@@ -272,13 +285,13 @@ class PipedriveClient(BaseCRMClient):
                 }
         except httpx.HTTPError as exc:
             logger.error("Pipedrive sync failed: %s", exc)
-            raise CRMSyncError(f"Pipedrive sync failed: {exc}")
+            raise CRMSyncError(f"Pipedrive sync failed: {exc}") from exc
 
 
 def get_crm_client(provider: str, access_token: str) -> BaseCRMClient:
     if provider == "hubspot":
         return HubSpotClient(access_token)
-    elif provider == "gohighlevel" or provider == "ghl":
+    elif provider in ("gohighlevel", "ghl"):
         return GoHighLevelClient(access_token)
     elif provider == "pipedrive":
         return PipedriveClient(access_token)

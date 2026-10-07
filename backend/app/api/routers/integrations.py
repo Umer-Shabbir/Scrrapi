@@ -15,16 +15,20 @@ DELETE /api/integrations/{provider}          -> Disconnect integration
 
 import secrets
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_app_db, get_current_user
-from app.db.models.integration import CONFIGURABLE_PROVIDERS, INTEGRATION_PROVIDERS, IntegrationConnection
+from app.db.models.integration import (
+    CONFIGURABLE_PROVIDERS,
+    INTEGRATION_PROVIDERS,
+    IntegrationConnection,
+)
 from app.db.models.user import User
 from app.export.crm import CRMSyncError, get_crm_client
 
@@ -46,11 +50,11 @@ class WebhookConfigRequest(BaseModel):
 
 class OAuthCallbackRequest(BaseModel):
     code: str
-    state: Optional[str] = None
+    state: str | None = None
 
 
 class CRMSyncRequest(BaseModel):
-    lead: Dict[str, Any]
+    lead: dict[str, Any]
 
 
 def _get_connection(db: Session, provider: str) -> IntegrationConnection:
@@ -225,7 +229,9 @@ def get_oauth_auth_url(
 ) -> dict:
     """Generate the OAuth authorization URL for the provider."""
     if provider not in ("hubspot", "gohighlevel", "pipedrive"):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"OAuth not supported for {provider}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=f"OAuth not supported for {provider}"
+        )
 
     state = secrets.token_urlsafe(16)
 
@@ -253,7 +259,9 @@ def handle_oauth_callback(
 ) -> dict:
     """Exchange authorization code for access and refresh tokens."""
     if provider not in ("hubspot", "gohighlevel", "pipedrive"):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"OAuth not supported for {provider}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=f"OAuth not supported for {provider}"
+        )
 
     conn = _get_connection(db, provider)
 
@@ -304,7 +312,9 @@ def sync_contact_to_crm(
 ) -> dict:
     """Perform a direct contact sync to the specified CRM with automatic deduplication."""
     if provider not in ("hubspot", "gohighlevel", "pipedrive"):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Sync not supported for {provider}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=f"Sync not supported for {provider}"
+        )
 
     conn = _get_connection(db, provider)
     if conn.status != "connected":
@@ -328,4 +338,4 @@ def sync_contact_to_crm(
 
         return result
     except CRMSyncError as exc:
-        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc))
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc

@@ -54,7 +54,7 @@ interface NavItem {
    * to this nav item's real DOM position, read via getBoundingClientRect --
    * not a fixed pixel offset, so a callout still lands on its target if the
    * sidebar ever reflows. */
-  tourAnchor?: "categories" | "locations" | "jobs";
+  tourAnchor?: "jobs" | "categories" | "locations" | "templates" | "schedules" | "suppression" | "proxies" | "integrations" | "team" | "settings";
   /** Cross-cutting #1: nav icons were rendering as blank placeholder squares
    * sitewide -- a real 17px outline icon per item, not a Figma-matching
    * blank box. */
@@ -67,16 +67,16 @@ function useNavItems(): NavItem[] {
     { label: "Jobs", to: "/", group: "RUN", tourAnchor: "jobs", icon: WorkOutlineIcon },
     { label: "Categories", to: "/categories", group: "RUN", badge: keywords.length || undefined, tourAnchor: "categories", icon: CategoryIcon },
     { label: "Locations", to: "/locations", group: "RUN", badge: locations.length || undefined, tourAnchor: "locations", icon: PlaceIcon },
-    { label: "Templates", to: "/templates", group: "RUN", icon: DescriptionIcon },
-    { label: "Schedules", to: "/schedules", group: "RUN", icon: ScheduleIcon },
-    { label: "Suppression", to: "/suppression", group: "DATA", icon: BlockIcon },
-    { label: "Proxies", to: "/proxies", group: "ADMIN", icon: DnsIcon },
-    { label: "Integrations", to: "/integrations", group: "ADMIN", icon: ExtensionIcon },
-    { label: "Team", to: "/team", group: "ADMIN", icon: GroupIcon },
+    { label: "Templates", to: "/templates", group: "RUN", tourAnchor: "templates", icon: DescriptionIcon },
+    { label: "Schedules", to: "/schedules", group: "RUN", tourAnchor: "schedules", icon: ScheduleIcon },
+    { label: "Suppression", to: "/suppression", group: "DATA", tourAnchor: "suppression", icon: BlockIcon },
+    { label: "Proxies", to: "/proxies", group: "ADMIN", tourAnchor: "proxies", icon: DnsIcon },
+    { label: "Integrations", to: "/integrations", group: "ADMIN", tourAnchor: "integrations", icon: ExtensionIcon },
+    { label: "Team", to: "/team", group: "ADMIN", tourAnchor: "team", icon: GroupIcon },
     { label: "API Keys", to: "/api-keys", group: "ADMIN", icon: VpnKeyIcon },
     { label: "Audit", to: "/audit", group: "ADMIN", icon: FactCheckIcon },
     { label: "System", to: "/system", group: "ADMIN", icon: MonitorHeartIcon },
-    { label: "Settings", to: "/settings", group: "ADMIN", icon: TuneIcon },
+    { label: "Settings", to: "/settings", group: "ADMIN", tourAnchor: "settings", icon: TuneIcon },
     { label: "Account", to: "/account", group: "ADMIN", icon: PersonIcon },
   ];
 }

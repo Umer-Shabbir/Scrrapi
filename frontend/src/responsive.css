@@ -66,11 +66,11 @@
   }
 }
 
-/* Data table -> stacked cards at mobile. Pair with the .neo-table-card-row
+/* Data table -> stacked cards at tablet/mobile. Pair with the .neo-table-card-row
    markup pattern (see Dashboard/Schedules/WebhookDeliveryLog): the real
-   <table> element gets this class and is hidden at <=768px in favor of a
+   <table> element gets this class and is hidden at <=1024px in favor of a
    sibling card-list rendered for the same rows. */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .neo-responsive-table {
     display: none !important;
   }
@@ -78,7 +78,7 @@
 .neo-responsive-cards {
   display: none;
 }
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .neo-responsive-cards {
     display: flex !important;
     flex-direction: column;

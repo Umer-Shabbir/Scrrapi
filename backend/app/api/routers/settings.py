@@ -61,6 +61,7 @@ from app.core.runtime_settings import (
     ALL_WATERFALL_PROVIDERS,
     EMAIL_VERIFICATION_MODES,
     SCORE_WEIGHT_KEYS,
+    get_anthropic_api_key,
     get_concurrent_targets,
     get_cooldown_base_s,
     get_deep_crawl_enabled,
@@ -75,6 +76,7 @@ from app.core.runtime_settings import (
     get_waterfall_enrichment_enabled,
     get_waterfall_providers,
     reset_to_defaults,
+    set_anthropic_api_key,
     set_concurrent_targets,
     set_cooldown_base_s,
     set_deep_crawl_enabled,
@@ -111,6 +113,7 @@ _AUDITED_SETTINGS_KEYS = (
     "exportRetentionDays",
     "waterfallEnrichmentEnabled",
     "waterfallProviders",
+    "anthropicApiKey",
 )
 
 
@@ -150,6 +153,7 @@ class UpdateSettingsRequest(BaseModel):
     prospeo_api_key: str | None = Field(default=None, alias="prospeoApiKey")
     datagma_api_key: str | None = Field(default=None, alias="datagmaApiKey")
     findymail_api_key: str | None = Field(default=None, alias="findymailApiKey")
+    anthropic_api_key: str | None = Field(default=None, alias="anthropicApiKey")
 
 
 @router.get("/")
@@ -225,6 +229,8 @@ def update_settings(
         changed["findymail_api_key"] = set_provider_api_key(
             db, "findymail", payload.findymail_api_key
         )
+    if payload.anthropic_api_key is not None:
+        changed["anthropic_api_key"] = set_anthropic_api_key(db, payload.anthropic_api_key)
 
     if payload.concurrent_targets is not None:
         changed["concurrent_targets"] = set_concurrent_targets(db, payload.concurrent_targets)
@@ -357,4 +363,5 @@ def _settings_dict(db: Session) -> dict:
         "prospeoApiKey": get_provider_api_key(db, "prospeo"),
         "datagmaApiKey": get_provider_api_key(db, "datagma"),
         "findymailApiKey": get_provider_api_key(db, "findymail"),
+        "anthropicApiKey": get_anthropic_api_key(db),
     }

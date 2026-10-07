@@ -8,12 +8,14 @@ Tests:
 """
 
 import pytest
+
 from app.export.crm import (
-    HubSpotClient,
     GoHighLevelClient,
+    HubSpotClient,
     PipedriveClient,
     get_crm_client,
 )
+
 
 def test_hubspot_mock_sync_new_and_deduplication():
     client = HubSpotClient(access_token="mock_token_123")

@@ -110,6 +110,10 @@ DATAGMA_API_KEY_KEY = "datagma_api_key"
 FINDYMAIL_API_KEY_KEY = "findymail_api_key"
 ALL_WATERFALL_PROVIDERS = ("hunter", "prospeo", "datagma", "findymail")
 
+# Anthropic API Key
+ANTHROPIC_API_KEY_KEY = "anthropic_api_key"
+
+
 _TRUE_VALUES = {"1", "true", "yes", "on"}
 
 
@@ -389,6 +393,21 @@ def get_all_waterfall_provider_keys(db: Session) -> dict[str, str]:
         for provider in ALL_WATERFALL_PROVIDERS
         if get_provider_api_key(db, provider)
     }
+
+
+def get_anthropic_api_key(db: Session) -> str | None:
+    """Retrieve the Anthropic API key stored in runtime settings."""
+    row = db.get(AppSetting, ANTHROPIC_API_KEY_KEY)
+    if row is not None and row.value.strip():
+        return row.value.strip()
+    return settings.anthropic_api_key
+
+
+def set_anthropic_api_key(db: Session, value: str | None) -> str | None:
+    val = (value or "").strip()
+    _write(db, ANTHROPIC_API_KEY_KEY, val)
+    logger.info("anthropic api key updated", extra={"has_key": bool(val)})
+    return val or None
 
 
 def reset_to_defaults(db: Session) -> None:

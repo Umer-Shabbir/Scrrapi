@@ -2,13 +2,12 @@
 // AppLayout, over every authenticated route. Two halves of one 6-step flow:
 //
 // 1-3: Compliance (centered modal, full 70% ink scrim, segmented step bar).
-//      Each pane's "I UNDERSTAND"/"START TOUR →" writes its own audit row
-//      (POST /api/auth/compliance/ack); pane 3 also sets
-//      users.compliance_ack_at, which is what actually dismisses this modal
-//      on future loads — see backend/app/api/routers/auth.py.
-// 4-6: Product tour (anchored callouts near the Categories/Locations/Jobs
-//      nav items, no scrim, "STEP N OF 6" label continuing the same count).
-//      Optional and skippable — tracked in localStorage only
+    //      Each pane's "I UNDERSTAND"/"START TOUR →" writes its own audit row
+    //      (POST /api/auth/compliance/ack); pane 3 also sets
+    //      users.compliance_ack_at, which is what actually dismisses this modal
+    //      on future loads — see backend/app/api/routers/auth.py.
+    // 4-13: Product tour (anchored callouts near the items.
+    //      Optional and skippable — tracked in localStorage only
 //      (onboarding.tourDone), same precedent as this app's other client-only
 //      convenience flags (theme, job-draft, saved location/category
 //      presets) rather than a second server column for something with no
@@ -48,22 +47,57 @@ const COMPLIANCE_PANES = [
   },
 ];
 
-const TOUR_STEPS: { anchor: "categories" | "locations" | "jobs"; title: string; body: string }[] = [
+const TOUR_STEPS: { anchor: "jobs" | "categories" | "locations" | "templates" | "schedules" | "suppression" | "proxies" | "integrations" | "team" | "settings"; title: string; body: string }[] = [
   {
     anchor: "categories",
-    title: "Start with Categories",
-    body: 'Define the kinds of businesses you want — "plumbers", "HVAC contractors" — before you pick where to look.',
+    title: "1. Define Categories",
+    body: 'Start by listing the kinds of businesses you want to target (e.g. "Roofers", "HVAC").',
   },
   {
     anchor: "locations",
-    title: "Then pick Locations",
-    body: "Add the areas to search — cities, zip codes, or a radius around a point. This is where the scraper actually looks.",
+    title: "2. Pick Locations",
+    body: "Add the areas to search — cities, zip codes, or global radius options.",
   },
   {
     anchor: "jobs",
-    title: "Then hit Start Job",
-    body: "Head to Jobs to queue every category × area combination as a target and start scraping right away.",
+    title: "3. Run Jobs",
+    body: "Combine your categories and locations into a job and start scraping Google or Bing Maps.",
   },
+  {
+    anchor: "templates",
+    title: "4. Create Templates",
+    body: "Save your favorite category and location combinations into a template to reuse later.",
+  },
+  {
+    anchor: "schedules",
+    title: "5. Automate with Schedules",
+    body: "Set up automatic scraping jobs running daily, weekly, or at custom intervals.",
+  },
+  {
+    anchor: "suppression",
+    title: "6. Supression Lists",
+    body: "Keep track of businesses you’ve already contacted so they are filtered out dynamically.",
+  },
+  {
+    anchor: "proxies",
+    title: "7. Add Proxies",
+    body: "Enhance your scraping throughput by setting up proxy pools for headless instances.",
+  },
+  {
+    anchor: "integrations",
+    title: "8. Push to CRM",
+    body: "Connect your HubSpot, GoHighLevel, or Pipedrive for automatic two-way lead updates.",
+  },
+  {
+    anchor: "team",
+    title: "9. Invite your Team",
+    body: "Add operators to help manage data pipelines or restrict access for teammates.",
+  },
+  {
+    anchor: "settings",
+    title: "10. Enrichment Settings",
+    body: "Turn on Deep Site Crawling or Waterfall Enrichment to get personal emails and decision makers.",
+  }
 ];
 
 function StepBar({ total, current }: { total: number; current: number }) {
@@ -111,7 +145,7 @@ function ComplianceModal({ pane, onNext, pending }: { pane: number; onNext: () =
             </span>
           </div>
           <div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 16 }}>
-            <StepBar total={6} current={pane} />
+            <StepBar total={COMPLIANCE_PANES.length + TOUR_STEPS.length} current={pane} />
             <h2 style={{ margin: 0, fontFamily: font.head, fontSize: 18, color: color.ink }}>{spec.title}</h2>
             <p style={{ margin: 0, fontFamily: font.body, fontSize: 13, color: color.ink }}>{spec.body}</p>
             {spec.note && (
@@ -152,13 +186,14 @@ function TourCallout({ step, index, onNext, onSkip, isLast }: { step: (typeof TO
     : { position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 1000 };
 
   return (
-    <div style={{ ...position, background: color.white, border: `3px solid ${color.ink}`, boxShadow: shadow.sm, width: 320, padding: 16, display: "flex", flexDirection: "column", gap: 10 }}>
-      <StepBar total={6} current={index + 4} />
-      <span style={{ fontFamily: font.body, fontWeight: 700, fontSize: 14, color: color.ink }}>{step.title}</span>
-      <p style={{ margin: 0, fontFamily: font.body, fontSize: 12, color: color.ink }}>{step.body}</p>
+    <div style={{ ...position, background: color.white, border: `3px solid ${color.ink}`, boxShadow: shadow.sm, width: 280, padding: 16, display: "flex", flexDirection: "column", gap: 10 }}>
+      {/* 3 previously built compliance steps + the amount of tour steps */}
+      <StepBar total={COMPLIANCE_PANES.length + TOUR_STEPS.length} current={index + COMPLIANCE_PANES.length + 1} />
+      <span style={{ fontFamily: font.body, fontWeight: 700, fontSize: 13, color: color.ink }}>{step.title}</span>
+      <p style={{ margin: 0, fontFamily: font.body, fontSize: 11.5, color: color.ink }}>{step.body}</p>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         {!isLast && (
-          <button type="button" onClick={onSkip} style={{ border: "none", background: "transparent", cursor: "pointer", padding: 0, fontFamily: font.body, fontWeight: 700, fontSize: 11.5, color: color.ink }}>
+          <button type="button" onClick={onSkip} style={{ border: "none", background: "transparent", cursor: "pointer", padding: 0, fontFamily: font.body, fontWeight: 700, fontSize: 10.5, color: color.ink }}>
             SKIP TOUR
           </button>
         )}
@@ -181,6 +216,7 @@ export default function OnboardingFlow() {
   const needsCompliance = !!user && !user.complianceAckAt;
 
   useEffect(() => {
+    // Only start the tour if the user exists and compliance is out of the way
     if (!user || needsCompliance || startedTour.current) return;
     startedTour.current = true;
     if (localStorage.getItem(TOUR_DONE_KEY) !== "true") {
