@@ -30,3 +30,12 @@ Thumbs.db
 # Dev runner logs (scripts/dev.mjs, scripts/check.mjs)
 /logs/
 backend/*.log
+frontend/*.log
+*.log
+
+# Patches and temporary scripts
+*.patch
+patch_*.py
+patch_*.js
+patch_*.cjs
+check_*.py
