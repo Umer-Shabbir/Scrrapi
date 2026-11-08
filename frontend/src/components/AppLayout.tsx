@@ -114,6 +114,9 @@ function TopBar({ isMobile, onMenuClick }: { isMobile: boolean; onMenuClick: () 
   return (
     <div
       style={{
+        position: "sticky",
+        top: 0,
+        zIndex: 999,
         height: 64,
         borderBottom: `3px solid ${color.ink}`,
         background: color.white,
@@ -284,7 +287,7 @@ function Sidebar({
       // Only the mobile overlay drawer slides in -- the desktop rail is
       // always-mounted chrome, sliding it in on every app load would just be
       // motion for its own sake.
-      className={isMobile ? "neo-slide-enter" : undefined}
+      className={`neo-sidebar-rail ${isMobile ? "neo-slide-enter" : ""}`}
       style={{
         width: iconOnly ? 64 : 250,
         flexShrink: 0,
@@ -294,7 +297,7 @@ function Sidebar({
         display: "flex",
         flexDirection: "column",
         gap: 4,
-        overflowY: "auto",
+        overflowY: isMobile ? "auto" : "hidden",
         transition: "width 160ms cubic-bezier(0.2, 0, 0, 1)",
         ...(isMobile
           ? {
@@ -306,16 +309,23 @@ function Sidebar({
               boxShadow: shadow.lg,
               ["--neo-slide-from" as string]: "translateX(-100%)",
             }
-          : {}),
+          : {
+              position: "sticky" as const,
+              top: 64,
+              height: "calc(100vh - 64px)",
+              boxSizing: "border-box" as const,
+              alignSelf: "flex-start",
+            }),
       }}
     >
       {groups.map((group) => {
         const groupItems = items.filter((item) => item.group === group);
         if (groupItems.length === 0) return null;
         return (
-          <div key={group} style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: group !== "RUN" ? 12 : 0 }}>
+          <div key={group} className="neo-sidebar-group" style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: group !== "RUN" ? 12 : 0 }}>
             {!iconOnly && (
               <p
+                className="neo-sidebar-group-label"
                 style={{
                   margin: 0,
                   fontFamily: font.body,
@@ -340,6 +350,7 @@ function Sidebar({
                   onClick={() => go(item.to)}
                   title={iconOnly ? item.label : undefined}
                   aria-label={item.label}
+                  className="neo-sidebar-btn"
                   style={{
                     height: 36,
                     display: "flex",
@@ -352,6 +363,7 @@ function Sidebar({
                     cursor: "pointer",
                     width: "100%",
                     textAlign: "left",
+                    flexShrink: 0,
                     transition:
                       "background 140ms cubic-bezier(0.2, 0, 0, 1), border-color 140ms cubic-bezier(0.2, 0, 0, 1), box-shadow 140ms cubic-bezier(0.2, 0, 0, 1)",
                   }}

@@ -95,3 +95,58 @@
     gap: 12px !important;
   }
 }
+
+/* Sidebar: stays in place and non-scrollable, with responsive compact sizing on short viewports */
+.neo-sidebar-rail {
+  overflow-y: hidden;
+}
+
+@media (max-height: 720px) {
+  .neo-sidebar-rail {
+    padding: 8px 6px !important;
+    gap: 2px !important;
+  }
+  .neo-sidebar-group {
+    gap: 1px !important;
+    margin-top: 4px !important;
+  }
+  .neo-sidebar-group-label {
+    font-size: 9px !important;
+    padding: 0 2px !important;
+  }
+  .neo-sidebar-btn {
+    height: 28px !important;
+    padding: 0 6px !important;
+  }
+  .neo-sidebar-btn span {
+    font-size: 11.5px !important;
+  }
+  .neo-sidebar-btn svg {
+    font-size: 15px !important;
+  }
+}
+
+@media (max-height: 600px) {
+  .neo-sidebar-rail {
+    padding: 4px 4px !important;
+    gap: 1px !important;
+  }
+  .neo-sidebar-group {
+    gap: 1px !important;
+    margin-top: 2px !important;
+  }
+  .neo-sidebar-group-label {
+    display: none !important;
+  }
+  .neo-sidebar-btn {
+    height: 26px !important;
+    padding: 0 4px !important;
+  }
+  .neo-sidebar-btn span {
+    font-size: 11px !important;
+  }
+  .neo-sidebar-btn svg {
+    font-size: 14px !important;
+  }
+}
+
